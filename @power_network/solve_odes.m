@@ -33,6 +33,12 @@ function out = solve_odes(obj, t, u, idx_u, fault, x, xkg, xk, V0, I0, linear, o
     [Y, Ymat_all] = obj.get_admittance_matrix();
 
     t_simulated = get_t_simulated(t_cand, uf, fault_f);
+    switch options.method
+        case 'zoh'
+            t_simulated = get_t_simulated(t_cand, uf, fault_f);
+        case 'foh'
+            t_simulated = t_cand;
+    end
 
     sols = cell(numel(t_simulated)-1, 1);
     reporter = tools.Reporter(t_simulated(1), t_simulated(end), options.do_report, options.OutputFcn);
