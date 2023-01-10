@@ -1,7 +1,5 @@
-% Two-inertia model of wind turbine with gearbox.
- 
 classdef wind_turbine < handle
-    properties(Access = private)
+    properties
         nx
         A
         B
@@ -11,14 +9,14 @@ classdef wind_turbine < handle
     end
 
     methods
-        function obj = wind_turbine(wt_params)
-            if nargin < 1 || isempty(wt_params)
-                wt_params = ss(0);
+        function obj = wind_turbine(params)
+            if nargin < 1 || isempty(params)
+                params = ss(0);
             end
-            obj.set_wind_turbine(wt_params);
+            obj.set_wind_farm(params);
             sys = ss(obj.A, obj.B, obj.C, obj.D);
-            sys.InputGroup.Pa = 1;
-            sys.InputGroup.T = 2;
+            sys.InputGroup.Ta = 1;
+            sys.InputGroup.Tg = 2;
             sys.OutputGroup.omega_r = 1;
             obj.sys = sys;
         end
@@ -27,10 +25,9 @@ classdef wind_turbine < handle
             nx = obj.nx;
         end
 
-        % Attention: the inputs here are Pa and T!
-        function [dx, y] = get_y(obj, x, u)
-            dx = obj.A * x + obj.B * u;
-            y = obj.C * x + obj.D * u;
+        function [dx, omega_r] = get_omega_r(obj, x_wt, T)
+            dx = obj.A * x_wt + obj.B * T;
+            omega_r = obj.C * x_wt + obj.D * T;
         end
 
         function x = initialize(obj)
@@ -41,26 +38,25 @@ classdef wind_turbine < handle
             sys = obj.sys;
         end
 
-        function set_wind_turbine(obj, wt)
-            % Why is it necessary to multiply by omega_m_hat?
-            if istable(wt)
-                Jl = wt{:, 'Jl'};
-                Jr = wt{:, 'Jr'};
-                dc = wt{:, 'dc'};
-                Bl = wt{:, 'Bl'};
-                Br = wt{:, 'Br'};
-                Ng = wt{:, 'Ng'};
-                Kc = wt{:, 'Kc'};
+        function set_wind_farm(obj, params)
+            if istable(params)
+                Jl = params{:, 'Jl'};
+                Jr = params{:, 'Jr'};
+                dc = params{:, 'dc'};
+                Bl = params{:, 'Bl'};
+                Br = params{:, 'Br'};
+                Ng = params{:, 'Ng'};
+                Kc = params{:, 'Kc'};
                 obj.A = [-(dc + Bl), dc/Ng, -Kc;
                         dc/Ng, -(dc/Ng^2 + Br), Kc/Ng;
                         1, -1/Ng, 0];
                 obj.B = [1, 0;
-                        0, -1;
-                        0, 0];
-                obj.C = [0, 1, 0]; 
-                obj.D = zeros(1, 3);
+                         0, -1;
+                         0, 0];
+                obj.C = [0, 1, 0];
+                obj.D = [0; 0; 0];
             else
-                [obj.A, obj.B, obj.C, obj.D] = ssdata(wt);
+                [obj.A, obj.B, obj.C, obj.D] = ssdata(params);
             end
             obj.nx = size(obj.A, 1);
         end
