@@ -1,16 +1,11 @@
-classdef gsc_controller < handle
+classdef rsc_controller < handle
 
     properties
-        omega0
-        vdc_st
-        Qr_st
-        f
-        g
     end
 
     methods
 
-        function obj = gsc_controller(controller_params)
+        function obj = rsc_controller(controller_params)
             obj.set_controller(controller_params);
         end
 
@@ -45,9 +40,12 @@ classdef gsc_controller < handle
                 Kp_qg = controller_params{:, 'Kp_qg'};
                 Ki_qg = controller_params{:, 'Ki_qg'};
                 Kp_dr = controller_params{:, 'Kp_dr'};
+                Ki_dr = controller_params{:, 'Ki_dr'};
+                Kp_qr = controller_params{:, 'Kp_qr'};
                 Ki_qr = controller_params{:, 'Ki_qr'};
                 m_max = controller_params{:, 'm_max'};
             end
+
             % How to calculate Qr?
             % In Sadamoto et. al the order of the subtractions is reversed
             obj.f = @(x, u)[(1 / tauG) * (Kp_dg * (obj.vdc_st - u(3)) + x(3) - u(1));
