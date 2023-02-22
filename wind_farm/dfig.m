@@ -31,11 +31,11 @@ classdef dfig < handle
         function [dx, ir, T] = get_ir_T(obj, x, u)
             dx = obj.A(u(5)) * x + obj.B * u(1:4);
             ir = obj.C * x + obj.D * u(1:4); 
-            T = obj.T(x)
+            T = obj.T(x);
         end
 
         function x = initialize(obj, omega0)
-            obj.omega_s = omega0
+            obj.omega_s = omega0;
             x = zeros(obj.get_nx, 1);
         end
 
@@ -51,8 +51,7 @@ classdef dfig < handle
                 Xs = Xm + Xls;
                 Xr = Xm + Xlr;
 
-                omega_s = obj.omega_s;
-                s = @(omega_r)((omega_s - omega_r) / omega_s);
+                s = @(omega_r)((obj.omega_s - omega_r) / obj.omega_s);
 
                 alpha1 = @(omega_r)(Xs * Xr - s(omega_r) * Xm ^ 2);
                 alpha2 = @(omega_r)(Xm ^ 2 - s(omega_r) * Xs * Xr);
@@ -60,10 +59,10 @@ classdef dfig < handle
                 beta_r = @(omega_r)(Xm * Xr * (1 - s(omega_r)));
                 sigma = 1 - (Xm ^ 2 / (Xr * Xs));
 
-                obj.A = @(omega_r)[-Rs * Xr, alpha1(omega_r) * omega_s, -Rr * Xm, -beta_r(omega_r) * omega_s;
-                                   -alpha1(omega_r) * omega_s, -Rs * Xr, beta_r(omega_r) * omega_s, -Rr * Xm;
-                                   -Rs * Xm, beta_s(omega_r) * omega_s, - Rr * Xs, -alpha2(omega_r) * omega_s;
-                                   -beta_s(omega_r) * omega_s, -Rs * Xm, alpha2(omega_r) * omega_s, -Rr * Xs] / (Xs * Xr * sigma);
+                obj.A = @(omega_r)[-Rs * Xr, alpha1(omega_r) * obj.omega_s, -Rr * Xm, -beta_r(omega_r) * obj.omega_s;
+                                   -alpha1(omega_r) * obj.omega_s, -Rs * Xr, beta_r(omega_r) * obj.omega_s, -Rr * Xm;
+                                   -Rs * Xm, beta_s(omega_r) * obj.omega_s, - Rr * Xs, -alpha2(omega_r) * obj.omega_s;
+                                   -beta_s(omega_r) * obj.omega_s, -Rs * Xm, alpha2(omega_r) * obj.omega_s, -Rr * Xs] / (Xs * Xr * sigma);
 
                 obj.B = [-Xr, 0, Xm, 0;
                          0, -Xr, 0, Xm;
