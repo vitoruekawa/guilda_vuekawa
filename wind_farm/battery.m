@@ -37,12 +37,11 @@ classdef battery < handle
                 Cb = bat_params{:, 'Cb'};
                 m_max = bat_params{:, 'm_max'};
                 S = bat_params{:, 'S'};
-                omega0 = obj.omega0;
-                obj.f = @(x, u) = [
-                                   omega0 / Cb * (-x(2) - Gb * x(1));
-                                   omega0 / Lb * (x(1) - Rb * x(2) - max((S + u(2)), m_max) * u(1));
-                                   ];
-                obj.g = @(x, u) = max((S + u(2), m_max)) * x(2);
+                obj.f = @(x, u)[
+                                obj.omega0 / Cb * (-x(2) - Gb * x(1));
+                                obj.omega0 / Lb * (x(1) - Rb * x(2) - max((S + u(2)), m_max) * u(1));
+                                ];
+                obj.g = @(x, u)(max(S + u(2), m_max) * x(2));
             end
 
         end

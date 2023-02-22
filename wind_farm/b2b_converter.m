@@ -36,7 +36,7 @@ classdef b2b_converter < handle
                 % Is it necessary to multiply by omega0 here?
                 obj.f = @(x, u)[(1 / L) * (-R * x(1) + obj.omega0 * L * x(2) + real(u(8)) - (u(6) * x(3)) / 2);
                                 (1 / L) * (-obj.omega0 * L * x(1) - R * x(2) + imag(u(8)) - (u(7) * x(3)) / 2);
-                                (1 / (2 * x(3) * Cdc)) * (real(u(8)) * x(1) + imag(u(8)) * x(2) + (u(4) * x(3) * u(1) / 2) + (u(5) * x(3) * u(2) / 2) - Rg * (x(1) ^ 2 + x(2) ^ 2)) - 2 * Gsw * x(3) ^ 2 + x(3)u(3)]
+                                (1 / (2 * x(3) * Cdc)) * (real(u(8)) * x(1) + imag(u(8)) * x(2) + (u(4) * x(3) * u(1) / 2) + (u(5) * x(3) * u(2) / 2) - Rg * (x(1) ^ 2 + x(2) ^ 2)) - 2 * Gsw * x(3) ^ 2 + x(3)u(3)];
             end
 
         end
