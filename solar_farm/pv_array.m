@@ -4,6 +4,8 @@ classdef pv_array < handle
         ipv_s
         P_s
         idcp
+        Vpv
+        Rpv
         params
     end
 
@@ -30,8 +32,8 @@ classdef pv_array < handle
         function set_pv(obj, pv_params)
 
             if istable(vsc_params)
-                Rpv = pv_params{:, 'Rpv'};
-                Vpv = pv_params{:, 'Vpv'}; % Remind: Vpv = Vpv_s
+                obj.Rpv = pv_params{:, 'Rpv'};
+                obj.Vpv = pv_params{:, 'Vpv'}; % Remind: Vpv = Vpv_s
                 Vdcp_s = pv_params{:, 'Vdcp_s'};
 
                 obj.idcp = @(vdcp)(Vpv - vdcp) / Rpv;

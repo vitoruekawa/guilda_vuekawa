@@ -22,12 +22,11 @@ classdef vsc_controller < handle
         end
 
         % x = [chi_d, chi_q, zeta_dg, zeta_qg];
-        function [dx, mG] = get_dx_mG(obj, x, idg, iqg, vdc, vgrid, P_s, Q_s, u)
+        function dx = get_dx(x, idg, iqg, vgrid, P_s, Q_s)
             dx = obj.f(x, idg, iqg, vgrid, P_s, Q_s);
-            mG = obj.mG(x, idg, iqg, vgrid, vdc, u);
         end
 
-        function mG = get_mG(obj, x, idg, iqg, vgrid, vdc, u)
+        function mG = get_mG(x, idg, iqg, vgrid, vdc, u)
             mG = obj.mG(x, idg, iqg, vgrid, vdc, u);
         end
 

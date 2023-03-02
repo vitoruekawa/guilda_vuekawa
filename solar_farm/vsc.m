@@ -25,16 +25,15 @@ classdef vsc < handle
             dx = obj.f(x, idc, vgrid, md, mq);
         end
 
-g        function x = initialize(obj)
+        function x = initialize(obj)
             x = zeros(obj.get_nx, 1);
         end
 
-        function x_st = set_equilibrium(obj, I, V, P_s)
+        function [i_st, vdc_st] = set_equilibrium(obj, V, I, P_s)
             Pow = conj(I) * V;
             i_st = inv(real(V), imag(V); imag(V), -real(V)) * (-Pow / obj.gamma_pv);
             p_inp = Pow(1) / obj.gamma_pv + obj.params{:, 'R'} * i_st' * i_st;
             vdc_st = sqrt((P_s - p_inp) / (2 * obj.params{:, 'Gsw'}));
-            x_st = [i_st, vdc_st]
         end
 
         function set_vsc(obj, vsc_params)
