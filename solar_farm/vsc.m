@@ -1,5 +1,4 @@
 classdef vsc < handle
-
     properties
         omega0
         gamma_pv
@@ -27,11 +26,9 @@ classdef vsc < handle
         end
 
         % x = [id, iq, vdc];
-        function dx = get_dx(obj, x, idc, vgrid, mG)
-            dx = [obj.omega0 / obj.L * ([-obj.R, obj.L; -obj.L, -obj.R]) * x(1:2) + vgrid - mG * x(3) / 2;
-                  obj.omega0 / obj.Cdc * ((vgrid' * x(1:2) + x(3) * idc - obj.R * (x(1:2)' * x(1:2)))/(2 * x(3)) - obj.Gsw * x(3))];
-            % dx = [(obj.omega0 / obj.L) * ([-obj.R, obj.omega0 * obj.L; -obj.omega0 * obj.L, -obj.R] * x(1:2) + vgrid - mG * x(3) / 2);
-            %                                (obj.omega0 / (2 * x(3) * obj.Cdc)) * (vgrid' * x(1:2) + idc * x(3) - obj.R * (x(1:2)' * x(1:2)) - 2 * obj.Gsw * x(3) ^ 2)];
+        function dx = get_dx(obj, i, vdc, idc, vgrid, mG)
+            dx = [(obj.omega0 / obj.L) * ([-obj.R, obj.L; -obj.L, -obj.R] * i + vgrid - mG * vdc / 2);
+                  obj.omega0 / obj.Cdc * ((vgrid' * i + vdc * idc - obj.R * (i' * i))/(2 * vdc) - obj.Gsw * vdc)];
         end
 
         function [i_st, vdc_st] = calculate_equilibrium(obj, V, Pst, Qst, P_s)

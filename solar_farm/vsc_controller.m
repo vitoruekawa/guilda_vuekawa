@@ -1,8 +1,6 @@
 classdef vsc_controller < handle
 
     properties
-        f
-        mG
         omega0
         gamma_pv
         Kp_dg
@@ -13,6 +11,8 @@ classdef vsc_controller < handle
         R
         L
         m_max
+        Pst
+        Qst
     end
 
     methods
@@ -37,26 +37,30 @@ classdef vsc_controller < handle
         end
 
         % x = [chi_d, chi_q, zeta_dg, zeta_qg];
-        function dx = get_dx(obj, i, iref, Pst, Qst, P, Q)
+        function dx = get_dx(obj, i, iref, P, Q)
             dx = [(iref - i) / obj.tauG;
-                  obj.Ki_dg * (Pst - P);
-                  obj.Ki_qg * (Qst - Q); ];
+                  obj.Ki_dg * (obj.Pst - P);
+                  obj.Ki_qg * (obj.Qst - Q)];
         end
 
         function mG = calculate_mG(obj, x, ig, iref, vgrid, vdc, u)
-            val = (2 / vdc * (vgrid + [obj.L / (obj.omega0 * obj.tauG), obj.L; - obj.L, obj.L / (obj.omega0 * obj.tauG)] * ig -obj.R * x(1:2) - (obj.L / (obj.omega0 * obj.tauG)) * iref) + u);
-            mG(val>obj.m_max) = obj.m_max;
-            mG(val<-obj.m_max) = -obj.m_max;
-            % mG = max(min((2 / vdc * (vgrid + [obj.L / obj.omega0, obj.omega0 * obj.L; - obj.omega0 * obj.L, obj.L / obj.omega0] * ig -obj.R * x(1:2) - (obj.L / obj.omega0) * obj.iref) + u), obj.m_max), -obj.m_max);
+            mG = 2 / vdc * (vgrid + [obj.L / (obj.omega0 * obj.tauG), obj.L; - obj.L, obj.L / (obj.omega0 * obj.tauG)] * ig -obj.R * x(1:2) - (obj.L / (obj.omega0 * obj.tauG)) * iref) + u;
+            mG(mG > obj.m_max) = obj.m_max;
+            mG(mG <- obj.m_max) = -obj.m_max;
         end
 
-        function iref = calculate_iref(obj, x, Pst, Qst, P, Q)
-            iref = [obj.Kp_dg * (Pst - P); obj.Kp_qg * (Qst - Q)] + x(3:4);
+        function iref = calculate_iref(obj, zeta, P, Q)
+            iref = [obj.Kp_dg * (obj.Pst - P); obj.Kp_qg * (obj.Qst - Q)] + zeta;
         end
 
         function [chi_st, zeta_st] = calculate_equilibrium(~, i_st)
             chi_st = i_st;
             zeta_st = i_st;
+        end
+
+        function set_PQst(obj, Pst, Qst)
+            obj.Pst = Pst;
+            obj.Qst = Qst;
         end
 
     end

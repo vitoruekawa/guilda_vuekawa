@@ -58,7 +58,7 @@ classdef network_IEEE68bus < power_network
             obj.add_branch(br);
         end
         
-        obj.initialize();
+        % obj.initialize();
         
         end
         

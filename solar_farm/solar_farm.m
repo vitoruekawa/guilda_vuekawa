@@ -35,18 +35,24 @@ classdef solar_farm < component
 
             P = V_grid' * I;
             Q = -I(2) * V_grid(1) + I(1) * V_grid(2);
+            
+            i = x(1:2);
+            vdc = x(3);
+            chi = x(4:5);
+            zeta = x(6:7);
 
-            iref = obj.vsc_controller.calculate_iref(x(4:7), obj.Pst, obj.Qst, P, Q);
-            idc = obj.pv_array.calculate_idc(x(3));
+            iref = obj.vsc_controller.calculate_iref(zeta, P, Q);
 
-            mG = obj.vsc_controller.calculate_mG(x(4:7), x(1:2), iref, V_grid, x(3), u);
+            idc = obj.pv_array.calculate_idc(vdc); 
 
-            dx(1:3) = obj.vsc.get_dx(x(1:3), idc, V_grid, mG);
-            dx(4:7) = obj.vsc_controller.get_dx(x(1:2), iref, obj.Pst, obj.Qst, P, Q);
+            mG = obj.vsc_controller.calculate_mG(x(4:7), i, iref, V_grid, vdc, u);
+
+            dx(1:3) = obj.vsc.get_dx(i, vdc, idc, V_grid, mG);
+            dx(4:7) = obj.vsc_controller.get_dx(x(1:2), iref, P, Q);
 
         end
 
-        function x_st = set_equilibrium(obj, V, I) % ok
+        function x_st = set_equilibrium(obj, V, I)
             P = V * conj(I);
             obj.Pst = real(P);
             obj.Qst = imag(P);
@@ -55,6 +61,7 @@ classdef solar_farm < component
             [i_st, vdc_st] = obj.vsc.calculate_equilibrium(V, obj.Pst, obj.Qst, P_s);
             obj.pv_array.set_S(vdc_st);
             [chi_st, zeta_st] = obj.vsc_controller.calculate_equilibrium(i_st);
+            obj.vsc_controller.set_PQst(obj.Pst, obj.Qst);
 
             x_st = [i_st; vdc_st; chi_st; zeta_st];
             obj.x_equilibrium = x_st;
