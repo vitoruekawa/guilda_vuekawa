@@ -6,8 +6,6 @@ classdef solar_farm < component
         pv_array
         vsc
         vsc_controller
-        Pst
-        Qst
     end
 
     methods
@@ -54,14 +52,14 @@ classdef solar_farm < component
 
         function x_st = set_equilibrium(obj, V, I)
             P = V * conj(I);
-            obj.Pst = real(P);
-            obj.Qst = imag(P);
+            Pst = real(P);
+            Qst = imag(P);
 
             P_s = obj.pv_array.calculate_P_s();
-            [i_st, vdc_st] = obj.vsc.calculate_equilibrium(V, obj.Pst, obj.Qst, P_s);
+            [i_st, vdc_st] = obj.vsc.calculate_equilibrium(V, Pst, Qst, P_s);
             obj.pv_array.set_S(vdc_st);
             [chi_st, zeta_st] = obj.vsc_controller.calculate_equilibrium(i_st);
-            obj.vsc_controller.set_PQst(obj.Pst, obj.Qst);
+            obj.vsc_controller.set_PQst(Pst, Qst);
 
             x_st = [i_st; vdc_st; chi_st; zeta_st];
             obj.x_equilibrium = x_st;
