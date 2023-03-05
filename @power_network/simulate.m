@@ -14,7 +14,7 @@ function out = simulate(obj, t, varargin)
 	    options.x0_con_local,...
 	    tools.complex2vec(options.V0), tools.complex2vec(options.I0), options.linear, options);
 
-    %if options.tools
-    %    out = tools.simulationResult(out,obj,[]);
-    %end
+    if options.tools
+        out = tools.simulationResult(out,obj,[]);
+    end
 end
