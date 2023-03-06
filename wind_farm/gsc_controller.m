@@ -1,64 +1,46 @@
 classdef gsc_controller < handle
 
     properties
-        omega0
-        vdc_st
-        Qr_st
-        f
-        g
+        LG
+        RG
+        tauG
+        KPdG
+        KPqG
+        KIdG
+        KIqG
+        m_max
     end
 
     methods
 
         function obj = gsc_controller(controller_params)
-            obj.set_controller(controller_params);
+            obj.LG = controller_params{:, 'LG'};
+            obj.RG = controller_params{:, 'RG'};
+            obj.tauG = controller_params{:, 'tauG'};
+            obj.KPdG = controller_params{:, 'KPdG'};
+            obj.KPqG = controller_params{:, 'KPqG'};
+            obj.KIdG = controller_params{:, 'KIdG'};
+            obj.KIqG = controller_params{:, 'KIqG'};
+            obj.m_max = controller_params{:, 'm_max'};
         end
 
         function nx = get_nx(obj)
             nx = 4;
         end
 
-        % x = [Didg; Diqg; Zeta_dg; Zeta_qg];
+        % x = [chi_dg; chi_qg; zeta_dg; zeta_qg];
         % u = [idG, iqG, vdc, udG, uqG, vgrid]
         function [dx, mG] = get_dx_mG(obj, x, u)
             dx = obj.f(x, u);
             mG = obj.g(x, u);
         end
 
-        function x = initialize(obj, omega0, vdc_st, Qr_st)
-            obj.omega0 = omega0;
-            obj.vdc_st = vdc_st;
-            obj.Qr_st = Qr_st;
-            x = zeros(obj.get_nx, 1);
+        function mG = calculate_mG(obj, x, ig, iref, vgrid, vdc, u)
+            mG = 2 / vdc * (vgrid + [obj.L / (obj.omega0 * obj.tauG), obj.L; - obj.L, obj.L / (obj.omega0 * obj.tauG)] * ig -obj.R * x(1:2) - (obj.L / (obj.omega0 * obj.tauG)) * iref) + u;
+            mG(mG > obj.m_max) = obj.m_max;
+            mG(mG <- obj.m_max) = -obj.m_max;
         end
 
-        function set_controller(obj, controller_params)
-
-            if istable(controller_params)
-                Lg = controller_params{:, 'Lg'};
-                Rg = controller_params{:, 'Rg'};
-                Gdc = controller_params{:, 'Gdc'};
-                Cdc = controller_params{:, 'Cdc'};
-                tauG = controller_params{:, 'tauG'};
-                Kp_dg = controller_params{:, 'Kp_dg'};
-                Ki_dg = controller_params{:, 'Ki_dg'};
-                Kp_qg = controller_params{:, 'Kp_qg'};
-                Ki_qg = controller_params{:, 'Ki_qg'};
-                Kp_dr = controller_params{:, 'Kp_dr'};
-                Ki_qr = controller_params{:, 'Ki_qr'};
-                m_max = controller_params{:, 'm_max'};
-            end
-            % How to calculate Qr?
-            % In Sadamoto et. al the order of the subtractions is reversed
-            obj.f = @(x, u)[(1 / tauG) * (Kp_dg * (obj.vdc_st - u(3)) + x(3) - u(1));
-                            (1 / tauG) * (Kp_qg * (obj.Q_st - u(6) * [-u(2); u(1)]) + x(4) - u(2));
-                            Ki_dg * (u(3) - vdc_st);
-                            Ki_qg * (u(6) * [-u(2); u(1)] - obj.Q_st)];
-
-            obj.g = @(x, u)[max(min(2 / u(3) * (u(4) + u(6)(1) + Lg * u(2) - Rg * x(1) - Lg / (obj.omega0 * tauG) * (Kp_dg * (obj.vdc_st - u(3)) + x(3) - u(1))), m_max), -m_max);
-                            max(min(2 / u(3) * (u(5) + u(6)(2) - Lg * u(1) - Rg * x(2) - Lg / (obj.omega0 * tauG) * (Kp_qg * (obj.Q_st - u(6)' * [-u(2); u(1)]) + x(4) - u(2))), m_max), -m_max)]
-
-        end
 
     end
 

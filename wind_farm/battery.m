@@ -1,50 +1,43 @@
 classdef battery < handle
 
     properties
-        f
-        g
+        S
+        Lb
+        Rb
+        Gb
+        Cb
         omega0
     end
 
     methods
 
-        function obj = battery(bat_params)
-            obj.set_battery(bat_params);
+        function obj = battery(bat_params, omega0)
+            obj.S = bat_params{:, 'S'};
+            obj.Lb = bat_params{:, 'Lb'};
+            obj.Rb = bat_params{:, 'Rb'};
+            obj.Gb = bat_params{:, 'Gb'};
+            obj.Cb = bat_params{:, 'Cb'};
+            obj.omega0 = omega0;
         end
 
         function nx = get_nx(obj)
-            nx = 1;
+            nx = 2;
         end
 
         % x = [vb, idcp]
         % u = [vdc, uS]
-        function [dx, idc] = get_idc(obj, x, u)
-            dx = obj.f(x, u);
-            idc = obj.g(x, u);
+        function dx = get_dx(obj, x, vdcp, uS)
+            dx =[(- x(2) - obj.Gb * x(1)) * obj.omega0 / obj.Cb;
+                (x(1) - obj.Rb * x(2) - vdcp) * obj.omega0 / obj.Lb];
         end
 
-        function x = initialize(obj, omega0)
-            obj.omega0 = omega0; % this is expected to be grid's frequency
-            x = zeros(obj.nx, 1);
+        function [vb_st, idcp_st] = calculate_equilibrium(obj, vdc_st)
+            vb_st = obj.S * vdc_st / (1 + obj.Rb * obj.Gb);
+            idcp_st = - obj.Gb * vb_st;
         end
 
-        function set_battery(obj, bat_params)
-
-            if istable(bat_params)
-                Rb = bat_params{:, 'Rb'};
-                Lb = bat_params{:, 'Lb'};
-                Gb = bat_params{:, 'Gb'};
-                Cb = bat_params{:, 'Cb'};
-                m_max = bat_params{:, 'm_max'};
-                S = bat_params{:, 'S'};
-                omega0 = obj.omega0;
-                obj.f = @(x, u) = [
-                                   omega0 / Cb * (-x(2) - Gb * x(1));
-                                   omega0 / Lb * (x(1) - Rb * x(2) - max((S + u(2)), m_max) * u(1));
-                                   ];
-                obj.g = @(x, u) = max((S + u(2), m_max)) * x(2);
-            end
-
+        function bat = get_bat(obj)
+            bat = obj.Gb * obj.S^2 / (obj.Gb * obj.Rb + 1);
         end
 
     end
