@@ -50,7 +50,7 @@ classdef solar_farm < component
 
         end
 
-        function x_st = set_equilibrium(obj, V, I)
+        function set_equilibrium(obj, V, I)
             P = V * conj(I);
             Pst = real(P);
             Qst = imag(P);
@@ -61,8 +61,7 @@ classdef solar_farm < component
             [chi_st, zeta_st] = obj.vsc_controller.calculate_equilibrium(i_st);
             obj.vsc_controller.set_PQst(Pst, Qst);
 
-            x_st = [i_st; vdc_st; chi_st; zeta_st];
-            obj.x_equilibrium = x_st;
+            obj.x_equilibrium = [i_st; vdc_st; chi_st; zeta_st];
         end
 
     end

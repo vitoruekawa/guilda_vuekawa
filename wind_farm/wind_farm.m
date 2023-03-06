@@ -32,7 +32,8 @@ classdef wind_farm < component
         end
 
         function nx = get_nx(obj)
-            nx = obj.wind_turbine.get_nx() + obj.dfig.get_nx() + obj.b2b.get_nx() + obj.gsc_controller.get_nx() + obj.rsc_controller.get_nx() + obj.battery.get_nx();
+            nx = obj.wind_turbine.get_nx() + obj.dfig.get_nx() + obj.b2b_converter.get_nx()...
+                + obj.gsc_controller.get_nx() + obj.rsc_controller.get_nx() + obj.battery.get_nx();
         end
 
         function nu = get_nu(obj)
@@ -42,7 +43,7 @@ classdef wind_farm < component
         function [dx, con] = get_dx_constraint(obj, t, x, V_grid, I_grid, u)
         end
 
-        function x_st = set_equilibrium(obj, V, I)
+        function set_equilibrium(obj, V, I)
             Vm = obj.Shm * V;
             Vl = obj.Shl * V;
 
@@ -61,7 +62,6 @@ classdef wind_farm < component
             % Calculate B2B (RSC + DC-Link + GSC) setpoints
             bat = obj.battery.get_bat();
             [iGd_st, iGq_st, vdc_st] = obj.b2b_converter.calculate_equilibrium(Vl, vr_st, ir_st, bat);
-            iG_st = iGd_st + j * iGq_st;
 
             % Calculate battery setpoints
             [vb_st, idcp_st] = obj.battery.calculate_equilibrium(vdc_st);
@@ -75,9 +75,12 @@ classdef wind_farm < component
             % RSC controller setpoints
             chi_dR_st = real(vr_st); 
             chi_qR_st = imag(vr_st);
+            disp(obj.get_nx())
 
-            x_st = [omega_l_st; omega_r_st; theta_st; idr_st; iqr_st; ids_st; iqs_st; iGd_st; iGq_st; chi_dG_st; chi_qG_st; zeta_dG_st; zeta_qG_st; chi_dR_st; chi_qR_st; vdc_st; vb_st; idcp_st];
-            obj.x_equilibrium = x_st;
+            obj.x_equilibrium = [omega_l_st; omega_r_st; theta_st; idr_st; iqr_st; ids_st;... 
+                                 iqs_st; iGd_st; iGq_st; chi_dG_st; chi_qG_st; zeta_dG_st;...
+                                 zeta_qG_st; chi_dR_st; chi_qR_st; vdc_st; vb_st; idcp_st];
+
         end
 
     end
