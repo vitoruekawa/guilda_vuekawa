@@ -90,7 +90,7 @@ sto_con = [
            2e6 0.001 1e-6 0.001 2 0;
            ];
 
-gamma = 100;
+gamma = 60;
 omega0 = 2 * pi * 60;
 
 Pbase = 100 * 1e6;
@@ -150,7 +150,7 @@ KPdG = -winp(2);
 KPqG = -winp(4);
 KIdG = -winp(3);
 KIqG = -winp(5);
-gsc_con_params = table(LG, RG, tauG, KPdG, KPqG, KIdG, KIqG, m_max);
+gsc_con_params = table(Pr_st, Qr_st, LG, RG, tauG, KPdG, KPqG, KIdG, KIqG, m_max);
 
 % Battery parameters
 S = sto_con(5);

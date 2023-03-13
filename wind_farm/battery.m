@@ -26,9 +26,16 @@ classdef battery < handle
 
         % x = [vb, idcp]
         % u = [vdc, uS]
-        function dx = get_dx(obj, x, vdcp, uS)
+        function dx = get_dx(obj, x, vdcp)
             dx =[(- x(2) - obj.Gb * x(1)) * obj.omega0 / obj.Cb;
                 (x(1) - obj.Rb * x(2) - vdcp) * obj.omega0 / obj.Lb];
+        end
+
+        function [idc, vdcp] = calculate_idc_vdcp(obj, idcp, vdc, uS)
+            p = obj.S + uS;
+            p(p < 0) = 0;
+            idc = p * idcp;
+            vdcp = p * vdc;
         end
 
         function [vb_st, idcp_st] = calculate_equilibrium(obj, vdc_st)

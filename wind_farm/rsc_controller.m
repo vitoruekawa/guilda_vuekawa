@@ -8,6 +8,9 @@ classdef rsc_controller < handle
         KPdR
         KPqR
         m_max
+        Vabs_m_st
+        omega_r_st
+        ir_st
     end
 
     methods
@@ -23,14 +26,29 @@ classdef rsc_controller < handle
         end
 
         function nx = get_nx(obj)
-            nx = 4;
+            nx = 2;
         end
 
         % x = [Didg; Diqg; Zeta_dg; Zeta_qg];
         % u = [idG, iqG, vdc, udG, uqG, vgrid]
-        function [dx, mG] = get_dx_mG(obj, x, u)
-            dx = obj.f(x, u);
-            mG = obj.g(x, u);
+        function dx = get_dx(obj, ir, ir_ref)
+            dx = [obj.kappaId; obj.kappaIq] .* (ir - ir_ref);
+        end
+
+        function mR = calculate_mR(obj, ir, ir_ref, chiR, uR, vdc)
+            mR = 2 * ([obj.kappaPd; obj.kappaPq] .* (ir - ir_ref) + chiR + uR) / vdc;
+            mR(mR > obj.m_max) = obj.m_max;
+            mR(mR < -obj.m_max) = -obj.m_max;
+        end
+
+        function ir_ref = calculate_irref(obj, Vabs_m, omega_r)
+            ir_ref = [obj.KPdR; obj.KPqR] .* [Vabs_m - obj.Vabs_m_st; omega_r - obj.omega_r_st] + obj.ir_st;
+        end
+
+        function set_equilibrium(obj, Vabs_m_st, omega_r_st, ir_st)
+            obj.Vabs_m_st = Vabs_m_st;
+            obj.omega_r_st = omega_r_st;
+            obj.ir_st = ir_st;
         end
 
         function x = initialize(obj, omega0, vdc_st, Qr_st)
