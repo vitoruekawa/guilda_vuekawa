@@ -11,18 +11,19 @@ function [V, I] = calculate_power_flow(obj, varargin)
     p.addOptional('return_vector', false);
     p.parse(varargin{:});
 
-    options = optimoptions('fsolve', 'MaxFunEvals', p.Results.MaxFunEvals,...
-        'MaxIterations', p.Results.MaxIterations, 'Display', p.Results.Display,...
+    options = optimoptions('fsolve', 'MaxFunEvals', p.Results.MaxFunEvals, ...
+        'MaxIterations', p.Results.MaxIterations, 'Display', p.Results.Display, ...
         'UseParallel', p.Results.UseParallel);
 
     [Y, Ymat] = obj.get_admittance_matrix();
-    V = fsolve(@(x) func_eq(obj.a_bus, Ymat, x), x0_all,options);
-    I = Ymat*V;
+    V = fsolve(@(x) func_eq(obj.a_bus, Ymat, x), x0_all, options);
+    I = Ymat * V;
 
     if ~p.Results.return_vector
         V = tools.vec2complex(V);
         I = tools.vec2complex(I);
     end
+
 end
 
 function out = func_eq(bus, Ymat, x)
@@ -30,19 +31,23 @@ function out = func_eq(bus, Ymat, x)
     Vmat = x;
     Vr = x(1:2:end);
     Vi = x(2:2:end);
-    YV = Ymat*Vmat;
+    YV = Ymat * Vmat;
     YV_mat = cell(n, 1);
+
     for itr = 1:n
-        YV_mat{itr} = sparse([YV(2*itr-1), YV(2*itr); -YV(2*itr), YV(2*itr-1)]);
+        YV_mat{itr} = sparse([YV(2 * itr - 1), YV(2 * itr); -YV(2 * itr), YV(2 * itr - 1)]);
     end
+
     YV_mat = blkdiag(YV_mat{:});
-    PQhat = YV_mat*Vmat;
+    PQhat = YV_mat * Vmat;
     Phat = PQhat(1:2:end);
     Qhat = PQhat(2:2:end);
 
     eq_consts = cell(n, 1);
+
     for itr = 1:numel(eq_consts)
         eq_consts{itr} = bus{itr}.get_constraint(Vr(itr), Vi(itr), Phat(itr), Qhat(itr));
     end
+
     out = vertcat(eq_consts{:});
 end
