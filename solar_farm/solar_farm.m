@@ -22,7 +22,7 @@ classdef solar_farm < component
         end
 
         function nu = get_nu(obj)
-            nu = 2;
+            nu = 4;
         end
 
         function [dx, con] = get_dx_constraint(obj, t, x, V_grid, I_grid, u)
@@ -37,10 +37,12 @@ classdef solar_farm < component
 
             iref = obj.vsc_controller.calculate_iref(zeta, P, Q);
             idc = obj.pv_array.calculate_idc(vdc); 
-            mG = obj.vsc_controller.calculate_mG([chi; zeta], i, iref, V_grid, vdc, u);
+            mG = obj.vsc_controller.calculate_mG([chi; zeta], i, iref, V_grid, vdc, u(1:2));
 
             dx(1:3) = obj.vsc.get_dx(i, vdc, idc, V_grid, mG);
             dx(4:7) = obj.vsc_controller.get_dx(i, iref, P, Q);
+            dx(1) = dx(1) + u(3);
+            dx(2) = dx(2) + u(4);
 
         end
 
