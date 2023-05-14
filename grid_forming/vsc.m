@@ -21,15 +21,14 @@ classdef vsc < handle
             nx = 3;
         end
 
-        % State variables: vdc, isdq
-        function dx = get_dx(obj, idc, vdc, ix, v_sab, i_sab, v_ab, i_ab)
+        function dx = get_dx(obj, idc, vdc, ix, isdq, omega, vdq, idq, vsdq)
             dx = [(idc - obj.R_dc * vdc - ix) / obj.C_dc;
-                  (v_sab - obj.R_dc * i_sab - v_ab) / obj.L_f;
-                  (i_sab - i_ab) / obj.C_f; ];
+                  (-obj.R_f * isdq - omega * obj.L_f * [0, -1; 1, 0] * isdq + vdq - vsdq) / obj.L_f;
+                  (isdq - idq) / obj.C_f];
         end
 
-        function i_ab = calculate_i_ab(obj, i_sab, d_v_ab)
-            i_ab = i_sab - obj.C_f * d_v_ab;
+        function idq = calculate_idq(obj, isdq, d_vdq)
+            i_dq = i_sdq - obj.C_f * d_vdq;
         end
 
     end

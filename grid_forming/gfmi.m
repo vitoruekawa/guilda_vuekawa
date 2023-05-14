@@ -38,14 +38,11 @@ classdef gfmi < component
             nu = 0;
         end
 
-        % Questions:
-        % How to calculate the constraint?
-        % Is V and I already in alpha-beta coordinates?
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)
-            vdc = x(1); i_sab = x(2:3); v_ab = x(4); % VSC state variables
-            i_tau = x(5); % DC source state variable
-            x_vdq = x(6:7); x_idq = x(8:9); % VSC controller state variables
-            theta = x(10); zeta = x(11); % Reference model state variables
+            vdc = x(1); isdq = x(2:3); vdq = x(4);  % VSC state variables
+            i_tau = x(5);                           % DC source state variable
+            x_vdq = x(6:7); x_idq = x(8:9);         % VSC controller state variables
+            theta = x(10); zeta = x(11);            % Reference model state variables
 
             Pow = conj(I) * V;
             P = real(Pow);
@@ -56,35 +53,52 @@ classdef gfmi < component
             isdq = i_sab * [sin(theta), -cos(theta); cos(theta), sin(theta)];
 
             % Calculate references from grid forming models
-            vdq_hat = obj.ref_model.calculate_vdq_hat(Vdq, zeta); % ok
-            omega = obj.ref_model.calculate_omega(P); % ok
+            vdq_hat = obj.ref_model.calculate_vdq_hat(Vdq, zeta);
+            omega = obj.ref_model.calculate_omega(P);
 
             % Calculate modulation signal
-            m = obj.vsc_controller.calculate_m(Idq, Vdq, omega, vdq_hat, isdq, x_vdq, x_idq, theta); % ok
+            m = obj.vsc_controller.calculate_m(Idq, Vdq, omega, vdq_hat, isdq, x_vdq, x_idq);
 
-            ix = (1/2) * transpose(m) * i_sab; % ok
-            v_sab = (1/2) * m * vdc; % ok
-            idc = obj.dc_source.calculate_idc(i_tau); % ok
+            ix = (1/2) * transpose(m) * isdq;
+            vsdq = (1/2) * m * vdc;
+            idc = obj.dc_source.calculate_idc(i_tau);
 
             % Calculate dx
-            [d_vdc, d_i_sab, d_v_ab] = obj.vsc.get_dx(idc, vdc, ix, v_sab, i_sab, v_ab, i_ab); %ok
-            d_i_tau = obj.dc_source.get_dx(i_tau, ix, vdc, P); % ok
-            [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(Vdq, isdq, vdq_hat); % ok
-            [d_theta, d_zeta] = obj.ref_model.get_dx(P, Vdq); % ok
+            [d_vdc, d_isdq, d_vdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, omega, Vdq, Idq, vsdq);
+            d_i_tau = obj.dc_source.get_dx(i_tau, ix, vdc, P);
+            [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(Vdq, isdq, vdq_hat);
+            [d_theta, d_zeta] = obj.ref_model.get_dx(P, Vdq);
 
-            dx = [d_vdc; d_i_sab; d_v_ab; d_i_tau; d_x_vdq; d_x_idq; d_theta; d_zeta];
+            dx = [d_vdc; d_isdq; d_vdq; d_i_tau; d_x_vdq; d_x_idq; d_theta; d_zeta];
 
             % Calculate constraint
-            i_ab = obj.vsc.calculate_i_ab(i_sab, d_v_ab);
-            Ir = i_ab * cos(theta) + i_ab * sin(theta);
-            Ii = i_ab * sin(theta) - i_ab * cos(theta);
+            idq = obj.vsc.calculate_idq(isdq, d_vdq);
+            Ir = idq(1) * cos(theta) + idq(2) * sin(theta);
+            Ii = idq(1) * sin(theta) - idq(2) * cos(theta);
             con = I - [Ir; Ii];
         end
 
         function set_equilibrium(obj, V, I)
+            Pow = conj(I)*V;
+            P = real(Pow);
+
             theta_st = 0;
-            Vdq = V * [sin(theta_st), -cos(theta_st); cos(theta_st), sin(theta_st)];
-            Idq = I * [sin(theta_st), -cos(theta_st); cos(theta_st), sin(theta_st)];
+            omega_st = obj.ref_model.calculate_omega(P); % Is this correct? Is P_st = P?
+
+            Vdq_st = V * [sin(theta_st), -cos(theta_st); cos(theta_st), sin(theta_st)];
+            Idq_st = I * [sin(theta_st), -cos(theta_st); cos(theta_st), sin(theta_st)];
+
+            isdq_st = Idq_st;
+            zeta_st = Vdq_st(1);
+            x_vdq_st = obj.vsc_controller.calculate_x_vdq_st(omega_st, Vdq_st);
+            x_idq_st = obj.vsc_controller.calculate_x_idq_st(omega_st, Idq_st);
+
+            Ki_i = obj.vsc_controller.Ki_i;
+            Z = obj.vsc_controller.calculate_Z(omega_st);
+            i_tau_st = obj.dc_source.calculate_i_tau_st(Vdq_st, Idq_st, Z, x_idq_st, Ki_i);
+
+            obj.x_equilibrium = [obj.dc_source.vdc_st; Idq_st; Vdq_st; i_tau_st; x_vdq_st; x_idq_st; theta_st; zeta_st];
+
         end
 
     end
