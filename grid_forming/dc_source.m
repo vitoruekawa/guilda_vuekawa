@@ -21,7 +21,7 @@ classdef dc_source < handle
         end
 
         function nx = get_nx(obj)
-            nx = 1
+            nx = 1;
         end
 
         % dx = i_tau
@@ -35,8 +35,12 @@ classdef dc_source < handle
             idc = sign(i_tau) * min(abs(i_tau), obj.idc_max);
         end
 
-        function i_tau_st = calculate_i_tau_st(obj, vdq_st, idq_st, Z, x_idq_st, Ki_i)
-            i_tau_st = obj.R_dc * obj.vdc_st + (vdq_st + Z * idq_st + Ki_i * eye(2) * x_idq_st) * idq_st / obj.vdc_st;
+        function i_tau_st = calculate_i_tau_st(obj, ix_st)
+            i_tau_st = obj.R_dc * obj.vdc_st + ix_st;
+        end
+
+        function set_equilibrium(obj, P_st)
+            obj.P_st = P_st;
         end
 
     end
