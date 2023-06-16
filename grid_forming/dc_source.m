@@ -12,7 +12,6 @@ classdef dc_source < handle
     methods
 
         function obj = dc_source(params)
-            obj.P_st = params{:, 'P_st'};
             obj.vdc_st = params{:, 'vdc_st'};
             obj.idc_max = params{:, 'idc_max'};
             obj.tau_dc = params{:, 'tau_dc'};
@@ -24,9 +23,13 @@ classdef dc_source < handle
             nx = 1;
         end
 
+        function nu = get_nu(obj)
+            nu = 0;
+        end
+
         % dx = i_tau
-        function dx = get_dx(obj, i_tau, ix, vdc, P)
-            idc_st = obj.k_dc * (obj.vdc_st - vdc) + obj.P_st / obj.vdc_st + (obj.R_dc * vdc + (vdc * ix - P) / obj.vdc_st);
+        function dx = get_dx(obj, i_tau, vdc, P, ix)
+            idc_st = obj.k_dc * (obj.vdc_st - vdc) + (obj.P_st / obj.vdc_st) + (vdc / obj.R_dc) + ((vdc * ix - P) / obj.vdc_st);
             dx = (idc_st - i_tau) / obj.tau_dc;
         end
 
@@ -35,11 +38,7 @@ classdef dc_source < handle
             idc = sign(i_tau) * min(abs(i_tau), obj.idc_max);
         end
 
-        function i_tau_st = calculate_i_tau_st(obj, ix_st)
-            i_tau_st = obj.R_dc * obj.vdc_st + ix_st;
-        end
-
-        function set_equilibrium(obj, P_st)
+        function set_constants(obj, P_st)
             obj.P_st = P_st;
         end
 

@@ -29,27 +29,26 @@ classdef vsc_controller < handle
             nx = 4;
         end
 
+        function nu = get_nu(obj)
+            nu = 0;
+        end
+
         % State variables: x_vdq, x_idq
-        function [dx_vdq, dx_idq] = get_dx(obj, vdq, isdq, vdq_hat)
-            dx_vdq = vdq_hat - vdq;
-            dx_idq = obj.isdq_st - isdq;
+        function [d_x_vdq, d_x_idq] = get_dx(obj, vdq, isdq, vdq_hat)
+            d_x_vdq = vdq_hat - vdq;
+            d_x_idq = obj.isdq_st - isdq;
         end
 
         % Modulation
-        function m = calculate_m(obj, idq, vdq, omega, vdq_hat, isdq, x_vdq, x_idq)
+        function m = calculate_m(obj, Idq, Vdq, omega, vdq_hat, isdq, x_vdq, x_idq)
             % AC voltage control
-            obj.isdq_st = idq + obj.C_f * omega * [0, -1; 1, 0] * vdq + obj.Kp_v * eye(2) * (vdq_hat - vdq) + obj.Ki_v * eye(2) * x_vdq;
+            obj.isdq_st = Idq + obj.C_f * omega * [0, -1; 1, 0] * Vdq + obj.Kp_v * eye(2) * (vdq_hat - Vdq) + obj.Ki_v * eye(2) * x_vdq;
 
             % AC current control
-            vsdq_st = vdq + (obj.R_f * eye(2) + obj.L_f * omega * [0, -1; 1, 0]) * isdq + obj.Kp_i * eye(2) * (obj.isdq_st - isdq) + obj.Ki_i * eye(2) * x_idq;
+            vsdq_st = Vdq + (obj.R_f * eye(2) + obj.L_f * omega * [0, -1; 1, 0]) * isdq + obj.Kp_i * eye(2) * (obj.isdq_st - isdq) + obj.Ki_i * eye(2) * x_idq;
 
             % Modulation
             m = 2 * vsdq_st / obj.vdc_st;
-        end
-
-        function [x_vdq_st, x_idq_st] = calculate_equilibrium(obj, omega_st, vdq_st, idq_st)
-            x_vdq_st = - (obj.C_f * omega_st / obj.Ki_v) * [0, -1; 1, 0] * vdq_st;
-            x_idq_st =  2 * (obj.R_f * eye(2) + obj.L_f * omega_st * [0, -1; 1, 0]) * idq_st / obj.Ki_i;
         end
 
     end

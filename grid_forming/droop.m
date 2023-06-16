@@ -1,7 +1,7 @@
 classdef droop < handle
     properties
         omega_st
-        v_st
+        V_st
         P_st
         d_w
         Kp
@@ -11,8 +11,6 @@ classdef droop < handle
     methods
         function obj = droop(droop_params)
             obj.omega_st = droop_params{:, 'omega_st'};
-            obj.v_st = droop_params{:, 'v_st'};
-            obj.P_st = droop_params{:, 'P_st'};
             obj.d_w = droop_params{:, 'd_w'};
             obj.Kp = droop_params{:, 'Kp'};
             obj.Ki = droop_params{:, 'Ki'};
@@ -22,22 +20,26 @@ classdef droop < handle
             nx = 2;
         end
 
+        function nu = get_nu(obj)
+            nu = 0;
+        end
+
         % State variables: theta and zeta (PI controller)
-        function [d_theta, d_zeta] = get_dx(obj, P, Vdq)
-            d_theta = obj.calculate_omega(P);
-            d_zeta = obj.Ki * (obj.v_st - Vdq(1)); % Is Vdq(1) or abs(Vdq)?
+        function [d_delta, d_zeta] = get_dx(obj, P, Vdq)
+            d_delta = obj.d_w * (obj.P_st - P);
+            d_zeta = obj.Ki * (obj.V_st - norm(Vdq)); 
         end
 
         function vdq_hat = calculate_vdq_hat(obj, Vdq, zeta)
-            vdq_hat = [obj.Kp * (obj.v_st - Vdq(1)) + zeta; 0]; % Is Vdq(1) or abs(Vdq)?
+            vdq_hat = [obj.Kp * (obj.V_st - norm(Vdq)) + zeta; 0];
         end
 
         function omega = calculate_omega(obj, P)
-            omega = obj.omega_st + obj.d_w * (obj.P_st - P);
+            omega = obj.d_w * (obj.P_st - P);
         end
 
-        function set_equilibrium(obj, v_st, P_st)
-            obj.v_st = norm(v_st);
+        function set_constants(obj, V_st, P_st)
+            obj.V_st = norm(V_st);
             obj.P_st = P_st;
         end
 
