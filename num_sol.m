@@ -3,19 +3,16 @@ vd_hat_st = zeta_st;
 vq_hat_st = 0;
 
 syms id_st iq_st  C omega_st vd_st vq_st Kvp Kvi xvd_st xvq_st
-%isd_st_st = id_st - C * omega_st * vq_st + Kvi * xvd_st;
-%isq_st_st = iq_st + C * omega_st * vd_st + Kvi * xvq_st;
-
-isd_st_st = id_st - C * omega_st * vq_st + Kvp * (vd_hat_st - vd_st) + Kvi * xvd_st;
-isq_st_st = iq_st + C * omega_st * vd_st + Kvp * (vq_hat_st - vq_st) + Kvi * xvq_st;
+isd_st_st = id_st + Kvp * (vd_hat_st - vd_st) + Kvi * xvd_st;
+isq_st_st = iq_st + Kvp * (vq_hat_st - vq_st) + Kvi * xvq_st;
 
 
 syms R L isd_st isq_st Kip Kii xid_st xiq_st
 %vsd_st_st = vd_st + (R - omega_st*L) * isd_st + Kii * xid_st;
 %vsq_st_st = vq_st + (R + omega_st*L) * isq_st + Kii * xiq_st;
 
-vsd_st_st = vd_st + (R - omega_st*L) * isd_st + Kip * (isd_st_st - isd_st) + Kii * xid_st;
-vsq_st_st = vq_st + (R + omega_st*L) * isq_st + Kip * (isq_st_st - isq_st) + Kii * xiq_st;
+vsd_st_st = vd_st + (R * isd_st - omega_st*L*isq_st) + Kip * (isd_st_st - isd_st) + Kii * xid_st;
+vsq_st_st = vq_st + (R * isq_st + omega_st*L*isd_st) + Kip * (isq_st_st - isq_st) + Kii * xiq_st;
 
 syms vdc_st vdc
 md_st = 2 * vsd_st_st / vdc_st;
@@ -30,10 +27,10 @@ idc_st_st = kdc * (vdc_st - vdc_st) + (P_st / vdc_st) + (Gdc * vdc_st + ((vdc_st
 syms i_tau_st
 eq1 = idc_st_st - i_tau_st == 0;
 % eq2 = idc_st - Gdc * vdc_st - ix_st == 0;
-eq3 = - (R - omega_st*L) * isd_st - vd_st + vsd_st == 0;
-eq4 = - (R + omega_st*L) * isq_st - vq_st + vsq_st == 0;
-eq5 = C * omega_st * vq_st + isd_st - id_st == 0;
-eq6 = - C * omega_st * vd_st + isq_st - iq_st == 0;
+eq3 = - (R*isd_st - omega_st*L*isq_st) - vd_st + vsd_st == 0;
+eq4 = - (R*isq_st + omega_st*L*isd_st) - vq_st + vsq_st == 0;
+eq5 = isd_st - id_st == 0;
+eq6 = isq_st - iq_st == 0;
 eq7 = vd_hat_st - vd_st == 0;
 % eq8 = vq_hat_st - vq_st == 0;
 eq9 = isd_st_st - isd_st == 0; 

@@ -10,7 +10,7 @@ Veq = c.V_equilibrium;
 Ieq = c.I_equilibrium;
 u0 = zeros(c.get_nu,1);
 [dx,con] = c.get_dx_constraint(t,xeq,[real(Veq); imag(Veq)],[real(Ieq); imag(Ieq)],u0);
-disp(dx)
+disp(dx(6))
 
 % time = [0,10,20,40];
 % u_idx = 7;

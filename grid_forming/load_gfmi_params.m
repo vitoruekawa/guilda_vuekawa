@@ -9,7 +9,7 @@ Z_b=(V_b^2)/S_b;L_b=Z_b/omega_st;C_b=1/(omega_st*Z_b);
 %% Converter params
 V1_rms=1000/V_b; %Low voltage side
 V_st=sqrt(2/3)*V1_rms;
-vdc_st=3*V_st*1000000000000000000000;
+vdc_st=3*V_st;
 n=200;
 C_dc=0.008*(n)/C_b;
 R_f=0.001/n/Z_b;
