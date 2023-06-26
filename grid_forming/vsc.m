@@ -28,7 +28,7 @@ classdef vsc < handle
 
         function [d_vdc, d_isdq] = get_dx(obj, idc, vdc, ix, isdq, omega, vdq, vsdq)
             d_vdc = (idc - (vdc / obj.R_dc) - ix) / obj.C_dc;
-            d_isdq = (-obj.R_f * isdq - omega * obj.L_f * [0, -1; 1, 0] * isdq - vdq + vsdq) / obj.L_f;
+            d_isdq = (-(obj.R_f * eye(2) + omega * obj.L_f * [0, -1; 1, 0]) * isdq - vdq + vsdq) / obj.L_f;
             % d_vdq =  (-obj.C_f * omega * [0, -1; 1, 0] * vdq + isdq - Idq) / obj.C_f;
         end
 

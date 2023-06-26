@@ -20,7 +20,7 @@ R_dc=(vdc_st/(0.05*(S_b)/vdc_st)); % Is this per-unit?
 %DC source and governor-turbine time constants
 tau_dc=0.05;
 %defining SM governer gain----------------------
-d_w=2*pi*0.05/omega_st;
+d_w=2*pi*0.05;
 % grid-forming converter control----------------
 I_b_dc=S_b/vdc_st;
 i_loss_dc=vdc_st/R_dc;
