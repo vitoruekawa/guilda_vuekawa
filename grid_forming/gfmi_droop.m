@@ -1,4 +1,4 @@
-classdef gfmi < component
+classdef gfmi_droop < component
 
     properties (SetAccess = private)
         x_equilibrium
@@ -7,35 +7,24 @@ classdef gfmi < component
         dc_source
         vsc
         vsc_controller
-        ref_model
+        droop 
     end
 
     methods
 
-        function obj = gfmi(vsc_params, dc_source_params, controller_params, ref_model_params, type)
+        function obj = gfmi_droop(vsc_params, dc_source_params, controller_params, droop_params)
             obj.dc_source = dc_source(dc_source_params);
             obj.vsc = vsc(vsc_params);
             obj.vsc_controller = vsc_controller(controller_params);
-
-            switch type
-                case 'droop'
-                    obj.ref_model = droop(ref_model_params);
-                case 'vsm'
-                    obj.ref_model = vsm(ref_model_params);
-                case 'dvoc'
-                    obj.ref_model = dvoc(ref_model_params);
-                otherwise
-                    obj.ref_model = matching(ref_model_params);
-            end
-
+            obj.droop = droop(droop_params);
         end
 
         function nx = get_nx(obj)
-            nx = obj.dc_source.get_nx() + obj.vsc.get_nx() + obj.vsc_controller.get_nx() + obj.ref_model.get_nx();
+            nx = obj.dc_source.get_nx() + obj.vsc.get_nx() + obj.vsc_controller.get_nx() + obj.droop.get_nx();
         end
 
         function nu = get_nu(obj)
-            nu = obj.dc_source.get_nu() + obj.vsc.get_nu() + obj.vsc_controller.get_nu() + obj.ref_model.get_nu();
+            nu = obj.dc_source.get_nu() + obj.vsc.get_nu() + obj.vsc_controller.get_nu() + obj.droop.get_nu();
         end
 
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)
@@ -62,8 +51,8 @@ classdef gfmi < component
                    V(1) * cos(delta) + V(2) * sin(delta)];
             
             % Calculate references from grid forming models
-            vdq_hat = obj.ref_model.calculate_vdq_hat(vdq, zeta);
-            domega = obj.ref_model.calculate_omega(P);
+            vdq_hat = obj.droop.calculate_vdq_hat(vdq, zeta);
+            domega = obj.droop.calculate_omega(P);
 
             % Calculate modulation signal
             m = obj.vsc_controller.calculate_m(vdq, 1 + domega, vdq_hat, isdq, x_vdq, x_idq);
@@ -77,7 +66,7 @@ classdef gfmi < component
             [d_vdc, d_isdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, 1 + domega, vdq, vsdq);
             d_i_tau = obj.dc_source.get_dx(i_tau, vdc, P, ix);
             [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(vdq, isdq, vdq_hat);
-            [d_delta, d_zeta] = obj.ref_model.get_dx(P, vdq);
+            [d_delta, d_zeta] = obj.droop.get_dx(P, vdq);
 
             dx = [d_vdc; d_isdq; d_i_tau; d_x_vdq; d_x_idq; d_delta; d_zeta];
 
@@ -92,7 +81,7 @@ classdef gfmi < component
             P = real(Pow);
 
             obj.dc_source.set_constants(P);
-            obj.ref_model.set_constants(V, P);
+            obj.droop.set_constants(V, P);
 
             % delta_st = atan(- real(V) / imag(V));
             delta_st = 2*atan((imag(V) + (real(V)^2 + imag(V)^2)^(1/2))/real(V));

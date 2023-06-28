@@ -32,8 +32,12 @@ m_p=(2*pi*0.5)/(S_b); % what is this, and why 2*pi*0.5?
 k_dc=eta_1/(vdc_st*m_p);
 K_p=(1/vdc_st);
 K_r=1/R_dc;
+% synchronverter control
+Dp=(1/(m_p*omega_st));
+tau_f=0.02;
+Jr=Dp*tau_f;
 % AC voltage control--------------------------------
-Ki=2*0.25;
+Ki=4*5.2500e-04;
 Kp=0.001;
 % Voltage loop----------------------------------------
 n=200;
@@ -51,6 +55,6 @@ Ti_i = Kp_i / Ki_i;
 vsc_params = table(C_dc, R_dc, L_f, R_f, C_f);
 dc_source_params = table(vdc_st, idc_max, tau_dc, k_dc, R_dc);
 controller_params = table(L_f, C_f, R_f, Kp_v, Ki_v, Kp_i, Ki_i, vdc_st);
-ref_model_params = table(omega_st, V_st, d_w, Kp, Ki);
+ref_model_params = table(Jr, Dp, Kp, Ki);
 
 clearvars -except vsc_params dc_source_params controller_params ref_model_params 
