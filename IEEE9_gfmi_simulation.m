@@ -1,7 +1,7 @@
 clear;
 load_gfmi_params;
 net = network_IEEE9bus();
-c = gfmi(vsc_params, dc_source_params, controller_params, ref_model_params, 'droop');
+c = gfmi_droop(vsc_params, dc_source_params, controller_params, ref_model_params);
 net.a_bus{2}.set_component(c);
 
 t = 0;
@@ -25,15 +25,15 @@ disp(dx)
 % out1 = net.simulate(time, u, u_idx);
 % sampling_time = out1.t;
 % figure
-% omega1 = out1.X{1}(:,2);
+% omega1 = out1.X{1}(:,1);
 % plot(sampling_time, omega1, 'LineWidth', 2)
 % hold on
 % 
-% omega2 = out1.X{2}(:,2);
+% omega2 = out1.X{2}(:,9);
 % plot(sampling_time, omega2, 'LineWidth', 2)
 % hold on
 % 
-% omega3 = out1.X{3}(:,2);
+% omega3 = out1.X{3}(:,1);
 % plot(sampling_time, omega3, 'LineWidth', 2)
 % hold on
 % 

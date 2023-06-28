@@ -35,7 +35,7 @@ classdef droop < handle
         end
 
         function omega = calculate_omega(obj, P)
-            omega = obj.d_w * (obj.P_st - P);
+            omega = 1 + obj.d_w * (obj.P_st - P);
         end
 
         function set_constants(obj, V_st, P_st)

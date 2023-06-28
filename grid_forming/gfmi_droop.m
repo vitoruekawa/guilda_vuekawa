@@ -49,13 +49,16 @@ classdef gfmi_droop < component
             % Convert from grid to converter reference 
             vdq = [V(1) * sin(delta) - V(2) * cos(delta);
                    V(1) * cos(delta) + V(2) * sin(delta)];
+
+            idq = [I(1) * sin(delta) - I(2) * cos(delta);
+                   I(1) * cos(delta) + I(2) * sin(delta)];
             
             % Calculate references from grid forming models
             vdq_hat = obj.droop.calculate_vdq_hat(vdq, zeta);
-            domega = obj.droop.calculate_omega(P);
+            omega = obj.droop.calculate_omega(P);
 
             % Calculate modulation signal
-            m = obj.vsc_controller.calculate_m(vdq, 1 + domega, vdq_hat, isdq, x_vdq, x_idq);
+            m = obj.vsc_controller.calculate_m(vdq, idq, omega, vdq_hat, isdq, x_vdq, x_idq);
 
             % Calculate intermediate signals
             ix = (1/2) * transpose(m) * isdq;
@@ -63,7 +66,7 @@ classdef gfmi_droop < component
             idc = obj.dc_source.calculate_idc(i_tau);
 
             % Calculate dx
-            [d_vdc, d_isdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, 1 + domega, vdq, vsdq);
+            [d_vdc, d_isdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, omega, vdq, vsdq);
             d_i_tau = obj.dc_source.get_dx(i_tau, vdc, P, ix);
             [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(vdq, isdq, vdq_hat);
             [d_delta, d_zeta] = obj.droop.get_dx(P, vdq);
