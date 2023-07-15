@@ -15,37 +15,32 @@ C_dc=0.008*(n)/C_b;
 R_f=0.001/n/Z_b;
 L_f=(1/n)*200*10^-6/L_b;
 C_f=n*300*10^-6/C_b;
-R_dc=(vdc_st/(0.05*(S_b)/vdc_st)); % Is this per-unit?
+R_dc=(vdc_st^2*V_b^2)/(0.05*(S_b))/Z_b;
 
-%DC source and governor-turbine time constants
+%DC source
 tau_dc=0.05;
-%defining SM governer gain----------------------
-d_w=2*pi*0.05/omega_st;
 % grid-forming converter control----------------
-I_b_dc=S_b/vdc_st;
-i_loss_dc=vdc_st/R_dc;
-idc_max=1.15*(S_b/vdc_st)+i_loss_dc;%dc source saturation limits
+i_loss_dc=V_b*vdc_st/(Z_b*R_dc);
+idc_max=(1.15*(S_b/(V_b*vdc_st))+i_loss_dc)/I_b;%dc source saturation limits
 
 % DC voltage control--------------------------------
-eta_1= omega_st/vdc_st;
-m_p=(2*pi*0.5)/(S_b); % what is this, and why 2*pi*0.5?
-k_dc=eta_1/(vdc_st*m_p);
-K_p=(1/vdc_st);
-K_r=1/R_dc;
+eta_1= omega_st/(vdc_st*V_b);
+d_w=2*pi*0.06; % what is this, and why 2*pi*0.5?
+k_dc=eta_1/(vdc_st*V_b*d_w/S_b);
+%k_dc = 1.6667e+03;
+
 % AC voltage control--------------------------------
 Ki=2*0.25;
 Kp=0.001;
+
 % Voltage loop----------------------------------------
 n=200;
 Kp_v =0.52;
 Ki_v =(n)*1.161022;
-Kff_v = 1;
-Ti_v = Kp_v/Ki_v; 
+
 % Current loop
 Kp_i =0.738891;
 Ki_i =(1/n)*1.19;
-Kff_i = 1;
-Ti_i = Kp_i / Ki_i;
 
 %% Store parameters in tables
 vsc_params = table(C_dc, R_dc, L_f, R_f, C_f);
