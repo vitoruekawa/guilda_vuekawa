@@ -1,5 +1,5 @@
 load_pv_params;
-for gamma_pv = [60, 181, 306]
+for gamma_pv = [60, 181, 306, 400]
     net = network_IEEE68bus();
     bus = bus_PQ(gamma_pv * 2 / 100, 1, 0);
     branch = branch_pi_transformer(22, 69, 1i* 0.01, 0, 1, 0);
@@ -13,15 +13,15 @@ for gamma_pv = [60, 181, 306]
 
     time = [0, 1, 10,20,40];
     u_idx = 69;
-    d1 = +0.7 * net.a_bus{69}.component.x_equilibrium(1);
-    d2 = +0.7 * net.a_bus{69}.component.x_equilibrium(2);
+    d1 = -0.7 * net.a_bus{69}.component.x_equilibrium(1);
+    d2 = -0.7 * net.a_bus{69}.component.x_equilibrium(2);
 
     u = [0, 0, 0, 0, 0;...
          0, 0, 0, 0, 0;
          d1, 0, 0, 0, 0;
          d2, 0, 0, 0, 0];
    
-    out1 = net.simulate(time, u, u_idx, 'method', 'foh');
+    out1 = net.simulate(time, u, u_idx);
     sampling_time = out1.t;
     figure
     for idx = 1:16

@@ -19,17 +19,17 @@ classdef vsc < handle
         end
 
         function nx = get_nx(obj)
-            nx = 3;
+            nx = 5;
         end
 
         function nu = get_nu(obj)
             nu = 0;
         end
 
-        function [d_vdc, d_isdq] = get_dx(obj, idc, vdc, ix, isdq, omega, vdq, vsdq)
+        function [d_vdc, d_isdq, d_vdq] = get_dx(obj, idc, vdc, ix, isdq, Idq, omega, vdq, vsdq)
             d_vdc = (idc - (vdc / obj.R_dc) - ix) / obj.C_dc;
             d_isdq = (-(obj.R_f * eye(2) + omega * obj.L_f * [0, -1; 1, 0]) * isdq - vdq + vsdq) / obj.L_f;
-            % d_vdq =  (-obj.C_f * omega * [0, -1; 1, 0] * vdq + isdq - Idq) / obj.C_f;
+            d_vdq =  (-obj.C_f * omega * [0, -1; 1, 0] * vdq + isdq - Idq) / obj.C_f;
         end
 
     end

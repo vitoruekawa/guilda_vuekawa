@@ -25,13 +25,13 @@ classdef droop < handle
         end
 
         % State variables: theta and zeta (PI controller)
-        function [d_delta, d_zeta] = get_dx(obj, P, Vdq)
+        function [d_delta, d_zeta] = get_dx(obj, P, vdq)
             d_delta = obj.d_w * (obj.P_st - P);
-            d_zeta = obj.Ki * (obj.V_st - norm(Vdq)); 
+            d_zeta = obj.Ki * (obj.V_st - norm(vdq)); 
         end
 
-        function vdq_hat = calculate_vdq_hat(obj, Vdq, zeta)
-            vdq_hat = [obj.Kp * (obj.V_st - norm(Vdq)) + zeta; 0];
+        function vdq_hat = calculate_vdq_hat(obj, vdq, zeta)
+            vdq_hat = [obj.Kp * (obj.V_st - norm(vdq)) + zeta; 0];
         end
 
         function omega = calculate_omega(obj, P)

@@ -23,11 +23,11 @@ classdef component < handle
         end
 
         function get_dx_constraint_linear(obj,varargin)
-            disp_message("get_dx_constraint_linear")
+            obj.disp_message("get_dx_constraint_linear")
         end
 
         function [A, B, C, D, BV, DV, BI, DI, R, S] = get_linear_matrix(obj, varargin)
-            disp_message("get_dx_constraint_linear")
+            obj.disp_message("get_dx_constraint_linear")
         end
 
         function disp_messsage(function_name)

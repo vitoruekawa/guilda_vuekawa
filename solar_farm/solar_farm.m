@@ -2,6 +2,8 @@ classdef solar_farm < component
 
     properties (SetAccess = private)
         x_equilibrium
+        V_equilibrium
+        I_equilibrium
         gamma_pv
         pv_array
         vsc
@@ -58,6 +60,8 @@ classdef solar_farm < component
             obj.vsc_controller.set_PQst(Pst, Qst);
 
             obj.x_equilibrium = [i_st; vdc_st; chi_st; zeta_st];
+            obj.V_equilibrium = V;
+            obj.I_equilibrium = I;
         end
 
     end

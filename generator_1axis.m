@@ -303,9 +303,11 @@ classdef generator_1axis < component
             Pow = conj(I)*V;
             P = real(Pow);
             Q = imag(Pow);
+
             Xd = obj.parameter{:, 'Xd'};
             Xdp = obj.parameter{:, 'Xd_prime'};
             Xq = obj.parameter{:, 'Xq'};
+
             delta = Vangle + atan(P/(Q+Vabs^2/Xq));
             Enum = Vabs^4 + Q^2*Xdp*Xq + Q*Vabs^2*Xdp + Q*Vabs^2*Xq + P^2*Xdp*Xq;
             Eden = Vabs*sqrt(P^2*Xq^2 + Q^2*Xq^2 + 2*Q*Vabs^2*Xq + Vabs^4);

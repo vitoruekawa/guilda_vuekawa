@@ -8,19 +8,21 @@ classdef gfmi_droop < component
         vsc
         vsc_controller
         droop 
+        Xg
     end
 
     methods
 
-        function obj = gfmi_droop(vsc_params, dc_source_params, controller_params, droop_params)
+        function obj = gfmi_droop(vsc_params, dc_source_params, controller_params, droop_params, Xg)
             obj.dc_source = dc_source(dc_source_params);
             obj.vsc = vsc(vsc_params);
             obj.vsc_controller = vsc_controller(controller_params);
             obj.droop = droop(droop_params);
+            obj.Xg = Xg;
         end
 
         function nx = get_nx(obj)
-            nx = obj.dc_source.get_nx() + obj.vsc.get_nx() + obj.vsc_controller.get_nx() + obj.droop.get_nx();
+            nx = 1 + obj.dc_source.get_nx() + obj.vsc.get_nx() + obj.vsc_controller.get_nx() + obj.droop.get_nx();
         end
 
         function nu = get_nu(obj)
@@ -28,98 +30,109 @@ classdef gfmi_droop < component
         end
 
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)
+            % Attention, vdq != Vdq
+            % vdq is the terminal voltage of the VSC
+            % Vdq is the bus voltage converted to converter reference.
+
             % VSC state variables
             vdc = x(1);
             isdq = x(2:3);
+            vdq = x(4:5);
 
             % DC source state variable
-            i_tau = x(4);
+            i_tau = x(6);
 
             % VSC controller state variables
-            x_vdq = x(5:6);
-            x_idq = x(7:8);
+            x_vdq = x(7:8);
+            x_idq = x(9:10);
 
             % Reference model state variables
-            delta = x(9);
-            zeta = x(10);
+            delta = x(11);
+            zeta = x(12);
+            
+            domega = x(13);
+
+            % Convert from grid to converter reference
+            Vdq = [sin(delta), -cos(delta);
+                   cos(delta), sin(delta)] * V;
+
+            Idq = [(norm(vdq) - Vdq(2)) / obj.Xg;
+                    Vdq(1) / obj.Xg];
 
             % Active power 
-            P = V' * I;
+            % (equal both on sending and receiving ends)
+            P = transpose(Vdq) * Idq;
 
-            % Convert from grid to converter reference 
-            vdq = [V(1) * sin(delta) - V(2) * cos(delta);
-                   V(1) * cos(delta) + V(2) * sin(delta)];
-
-            idq = [I(1) * sin(delta) - I(2) * cos(delta);
-                   I(1) * cos(delta) + I(2) * sin(delta)];
-            
             % Calculate references from grid forming models
             vdq_hat = obj.droop.calculate_vdq_hat(vdq, zeta);
             omega = obj.droop.calculate_omega(P);
 
             % Calculate modulation signal
-            m = obj.vsc_controller.calculate_m(vdq, idq, omega, vdq_hat, isdq, x_vdq, x_idq);
+            m = obj.vsc_controller.calculate_m(vdq, Idq, omega, vdq_hat, isdq, x_vdq, x_idq);
 
             % Calculate intermediate signals
             ix = (1/2) * transpose(m) * isdq;
             vsdq = (1/2) * m * vdc;
-            idc = obj.dc_source.calculate_idc(i_tau);
+            % idc = obj.dc_source.calculate_idc(i_tau);
+            idc = i_tau;
 
             % Calculate dx
-            [d_vdc, d_isdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, omega, vdq, vsdq);
+            [d_vdc, d_isdq, d_vdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, Idq, omega, vdq, vsdq);
             d_i_tau = obj.dc_source.get_dx(i_tau, vdc, P, ix);
             [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(vdq, isdq, vdq_hat);
             [d_delta, d_zeta] = obj.droop.get_dx(P, vdq);
 
-            dx = [d_vdc; d_isdq; d_i_tau; d_x_vdq; d_x_idq; d_delta; d_zeta];
+            d_domega = d_delta - domega;
+
+            dx = [d_vdc; d_isdq; d_vdq; d_i_tau; d_x_vdq; d_x_idq; d_delta; d_zeta; d_domega];
 
             % Calculate constraint
-            Ir = isdq(1) * sin(delta) + isdq(2) * cos(delta);
-            Ii = - isdq(1) * cos(delta) + isdq(2) * sin(delta);
-            con = I - [Ir; Ii];
+            I_ = [sin(delta), cos(delta);
+                 - cos(delta), sin(delta)] * Idq;
+            con = I - I_;
         end
 
         function set_equilibrium(obj, V, I)
-            Pow = conj(I) * V;
+            % Power flow variables 
+            Vangle = angle(V);
+            Vabs =  abs(V);
+            Pow = conj(I)*V;
             P = real(Pow);
+            Q = imag(Pow);
 
-            obj.dc_source.set_constants(P);
-            obj.droop.set_constants(V, P);
-
-            % delta_st = atan(- real(V) / imag(V));
-            delta_st = 2*atan((imag(V) + (real(V)^2 + imag(V)^2)^(1/2))/real(V));
-            Idq = [real(I) * sin(delta_st) - imag(I) * cos(delta_st);
-                   real(I) * cos(delta_st) + imag(I) * sin(delta_st)];
-
-            Vdq = [real(V) * sin(delta_st) - imag(V) * cos(delta_st);
-                   real(V) * cos(delta_st) + imag(V) * sin(delta_st)];
-
-            % isdq_st = Idq;
-            isdq_st = [(real(I)*real(V) + imag(I)*imag(V))/(real(V)^2 + imag(V)^2)^(1/2);
-                        -(real(I)*imag(V) - imag(I)*real(V))/(real(V)^2 + imag(V)^2)^(1/2)];
-
-            vdc_st = obj.dc_source.vdc_st;
-            R_dc = obj.dc_source.R_dc;
+            % Get converter parameters
+            R_dc = obj.vsc.R_dc;
             R_f = obj.vsc.R_f;
-            i_tau_st = (R_f * (Idq' * Idq) + (Vdq' * Idq) + (vdc_st^2 / R_dc)) / vdc_st;
-            
-            x_idq_st = [0; 0];
+            C_f = obj.vsc.C_f;
+            L_f = obj.vsc.L_f;
+
+            % Calculation of steady state values of angle difference and
+            % converter terminal voltage
+            delta_st = Vangle + atan((P*obj.Xg)/(Vabs^2 + Q*obj.Xg));
+            v_st = P*obj.Xg/(Vabs * sin(delta_st - Vangle));
+
+            % Convert from bus to converter reference frame
+            id_st = real(I) * sin(delta_st) - imag(I) * cos(delta_st);
+            iq_st = real(I) * cos(delta_st) + imag(I) * sin(delta_st);
+
+            % Definition of steady state values
+            vdc_st = obj.dc_source.vdc_st;
+            isdq_st = [id_st; iq_st + C_f * v_st];
+            vdq_st = [v_st; 0];
+
+            vsdq_st = vdq_st + (R_f * eye(2) + L_f * [0, -1; 1, 0]) * isdq_st;
+            i_tau_st = vdc_st / R_dc + (transpose(vsdq_st) * isdq_st) / vdc_st;
             x_vdq_st = [0; 0];
+            x_idq_st = [0; 0];
+            zeta_st = v_st;
 
-            % zeta_st = Vdq(1);
-            zeta_st = (real(V)^2 + imag(V)^2)^(1/2);
+            % Set reference values
+            obj.droop.set_constants(v_st, P);
+            obj.dc_source.set_constants(P);
 
-            % obj.x_equilibrium = [vdc_st; isdq_st; i_tau_st; x_vdq_st; x_idq_st; delta_st; zeta_st];
-            % obj.V_equilibrium = V;
-            % obj.I_equilibrium = I;
+            domega_st = 0;
 
-            t0 = 0;
-            u0 = zeros(obj.get_nu, 1);
-            x0 = [vdc_st; isdq_st; i_tau_st; x_vdq_st; x_idq_st; delta_st; zeta_st];
-
-            options = optimoptions('fsolve', 'Algorithm', 'levenberg-marquardt', 'MaxFunctionEvaluations', 1e+5, 'MaxIterations', 1e+5);
-            func = @(x) obj.get_dx_constraint(t0, x, [real(V); imag(V)], [real(I); imag(I)], u0);
-            obj.x_equilibrium = fsolve(func, x0, options);
+            obj.x_equilibrium = [vdc_st; isdq_st; vdq_st; i_tau_st; x_vdq_st; x_idq_st; delta_st; zeta_st; domega_st];
             obj.V_equilibrium = V;
             obj.I_equilibrium = I;
 

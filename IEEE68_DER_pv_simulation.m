@@ -1,6 +1,6 @@
 load_pv_params
 
-bus_id = 69;
+bus_id = 22;
 
 for gamma_pv = [20, 181, 306]
 
@@ -18,7 +18,7 @@ for gamma_pv = [20, 181, 306]
     
     time = [0,10,20,40];
     u_idx = bus_id;
-    u = [1, 0, 0, 0;...
+    u = [0.2, 0.2, 0.2, 0.2;...
          0, 0, 0, 0];
     
     out1 = net.simulate(time, u, u_idx, 'method', 'foh');
