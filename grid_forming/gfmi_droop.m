@@ -22,7 +22,7 @@ classdef gfmi_droop < component
         end
 
         function nx = get_nx(obj)
-            nx = 1 + obj.dc_source.get_nx() + obj.vsc.get_nx() + obj.vsc_controller.get_nx() + obj.droop.get_nx();
+            nx = obj.dc_source.get_nx() + obj.vsc.get_nx() + obj.vsc_controller.get_nx() + obj.droop.get_nx();
         end
 
         function nu = get_nu(obj)
@@ -53,15 +53,18 @@ classdef gfmi_droop < component
             domega = x(13);
 
             % Convert from grid to converter reference
-            Vdq = [sin(delta), -cos(delta);
-                   cos(delta), sin(delta)] * V;
+            Vdq = [cos(delta), sin(delta);
+                   -sin(delta), cos(delta)] * V;
 
-            Idq = [(norm(vdq) - Vdq(2)) / obj.Xg;
-                    Vdq(1) / obj.Xg];
+            % Understand why does the expressions are switched
+            % and there is the negative sign when comparing to
+            % generator_1axis
+            Idq = -[Vdq(2) / obj.Xg;
+                    (norm(vdq) - Vdq(1)) / obj.Xg];
 
             % Active power 
             % (equal both on sending and receiving ends)
-            P = transpose(Vdq) * Idq;
+            P = transpose(vdq) * Idq;
 
             % Calculate references from grid forming models
             vdq_hat = obj.droop.calculate_vdq_hat(vdq, zeta);
@@ -80,15 +83,13 @@ classdef gfmi_droop < component
             [d_vdc, d_isdq, d_vdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, Idq, omega, vdq, vsdq);
             d_i_tau = obj.dc_source.get_dx(i_tau, vdc, P, ix);
             [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(vdq, isdq, vdq_hat);
-            [d_delta, d_zeta] = obj.droop.get_dx(P, vdq);
-
-            d_domega = d_delta - domega;
+            [d_delta, d_zeta, d_domega] = obj.droop.get_dx(P, vdq, domega);
 
             dx = [d_vdc; d_isdq; d_vdq; d_i_tau; d_x_vdq; d_x_idq; d_delta; d_zeta; d_domega];
 
             % Calculate constraint
-            I_ = [sin(delta), cos(delta);
-                 - cos(delta), sin(delta)] * Idq;
+            I_ = [cos(delta), -sin(delta);
+                  sin(delta), cos(delta)] * Idq;
             con = I - I_;
         end
 
@@ -96,7 +97,7 @@ classdef gfmi_droop < component
             % Power flow variables 
             Vangle = angle(V);
             Vabs =  abs(V);
-            Pow = conj(I)*V;
+            Pow = conj(I) * V;
             P = real(Pow);
             Q = imag(Pow);
 
@@ -108,12 +109,12 @@ classdef gfmi_droop < component
 
             % Calculation of steady state values of angle difference and
             % converter terminal voltage
-            delta_st = Vangle + atan((P*obj.Xg)/(Vabs^2 + Q*obj.Xg));
-            v_st = P*obj.Xg/(Vabs * sin(delta_st - Vangle));
+            delta_st = Vangle + atan((P * obj.Xg) / (Vabs^2 + Q * obj.Xg));
+            v_st = P * obj.Xg / (Vabs * sin(delta_st - Vangle));
 
             % Convert from bus to converter reference frame
-            id_st = real(I) * sin(delta_st) - imag(I) * cos(delta_st);
-            iq_st = real(I) * cos(delta_st) + imag(I) * sin(delta_st);
+            id_st = real(I) * cos(delta_st) + imag(I) * sin(delta_st);
+            iq_st = -real(I) * sin(delta_st) + imag(I) * cos(delta_st);
 
             % Definition of steady state values
             vdc_st = obj.dc_source.vdc_st;

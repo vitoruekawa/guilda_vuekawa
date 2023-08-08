@@ -24,7 +24,7 @@ L_f = (1/n) * 200 * 1e-6 / Lr * (Vr^2 / Vb^2) * (Sb / Sr);
 C_f = n * 300 * 1e-6 / Cr * (Vr^2 / Vb^2) * (Sb / Sr);
 R_dc = 1.2 / Zr * (Vr^2 / Vb^2) * (Sb / Sr); % Why isn't this term multiplied by n?
 C_dc = n * 0.008 / Cr * (Vr^2 / Vb^2) * (Sb / Sr);
-vdc_st = 2.44 * 1e3 / Vb; % Why isn't this term multiplied by n?
+vdc_st = 2.44 * 1e+3;
 tau_dc = 0.05;
 idc_max = 1.2 * Ir / Ib; % Why isn't this term multiplied by n?
 
@@ -36,7 +36,7 @@ Ki_i = 0.0059;
 k_dc = 1.6 * 1e3;
 
 %% Droop control
-d_w = 0.01 * omega_st;
+d_w = 2 * pi * 0.6 / omega_st;
 Kp = 0.001;
 Ki = 0.5;
 
