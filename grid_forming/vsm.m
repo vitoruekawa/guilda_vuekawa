@@ -26,15 +26,15 @@ classdef vsm < handle
         end
         
         % State variables: theta and zeta (PI controller)
-        function [d_delta, d_zeta, d_omega] = get_dx(obj, omega, P, Vdq)
+        function [d_delta, d_zeta, d_omega] = get_dx(obj, P, Vdq, omega)
             d_delta = omega - 1;
             d_zeta = obj.Ki * (obj.V_st - norm(Vdq));
-            d_omega = (obj.P_st - P) / obj.Jr + obj.Dp * (1 - omega);
+            d_omega = (obj.P_st - P) / obj.Jr + obj.Dp * (1 - omega) / obj.Jr;
         end
         
         function vdq_hat = calculate_vdq_hat(obj, Vdq, zeta, omega)
             i_f = obj.Kp * (obj.V_st - norm(Vdq)) + zeta;
-            vdq_hat = [0; -i_f * omega];
+            vdq_hat = [2 * i_f * omega; 0];
         end
         
         function set_constants(obj, V_st, P_st)

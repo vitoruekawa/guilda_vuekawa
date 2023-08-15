@@ -14,7 +14,7 @@ classdef network_IEEE9bus < power_network
         function obj = network_IEEE9bus(gen_model)
         
         if nargin<1
-            gen_model = 'generator_1axis';
+            gen_model = 'generator_2axis';
         end
         netname = 'IEEE9bus';
 
