@@ -24,12 +24,12 @@ L_f = (1/n) * 200 * 1e-6 / Lr * (Vr^2 / Vb^2) * (Sb / Sr);
 C_f = n * 300 * 1e-6 / Cr * (Vr^2 / Vb^2) * (Sb / Sr);
 R_dc = 1.2 / Zr * (Vr^2 / Vb^2) * (Sb / Sr); % Why isn't this term multiplied by n?
 C_dc = n * 0.008 / Cr * (Vr^2 / Vb^2) * (Sb / Sr);
-vdc_st = 2.44 * 1e+3 / Vb;
+vdc_st = 2.44 * 1e+3;
 tau_dc = 0.05;
 idc_max = 1.2 * Ir / Ib; % Why isn't this term multiplied by n?
 
 R_g = 0;
-L_g = L_f * 3;
+L_g = L_f * 6;
 
 %% AC and DC current and voltage control
 Kp_v = 0.52;

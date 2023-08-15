@@ -8,17 +8,15 @@ classdef gfmi_droop < component
         vsc
         vsc_controller
         droop 
-        Xg
     end
 
     methods
 
-        function obj = gfmi_droop(vsc_params, dc_source_params, controller_params, droop_params, Xg)
+        function obj = gfmi_droop(vsc_params, dc_source_params, controller_params, droop_params)
             obj.dc_source = dc_source(dc_source_params);
             obj.vsc = vsc(vsc_params);
             obj.vsc_controller = vsc_controller(controller_params);
             obj.droop = droop(droop_params);
-            obj.Xg = Xg;
         end
 
         function nx = get_nx(obj)
@@ -38,40 +36,34 @@ classdef gfmi_droop < component
             vdc = x(1);
             isdq = x(2:3);
             vdq = x(4:5);
+            idq = x(6:7);
 
             % DC source state variable
-            i_tau = x(6);
+            i_tau = x(8);
 
             % VSC controller state variables
-            x_vdq = x(7:8);
-            x_idq = x(9:10);
+            x_vdq = x(9:10);
+            x_idq = x(11:12);
 
             % Reference model state variables
-            delta = x(11);
-            zeta = x(12);
+            delta = x(13);
+            zeta = x(14);
             
-            domega = x(13);
+            domega = x(15);
 
             % Convert from grid to converter reference
             Vdq = [cos(delta), sin(delta);
                    -sin(delta), cos(delta)] * V;
 
-            % Understand why does the expressions are switched
-            % and there is the negative sign when comparing to
-            % generator_1axis
-            Idq = -[Vdq(2) / obj.Xg;
-                    (norm(vdq) - Vdq(1)) / obj.Xg];
-
             % Active power 
-            % (equal both on sending and receiving ends)
-            P = transpose(vdq) * Idq;
+            P = transpose(V) * I;
 
             % Calculate references from grid forming models
             vdq_hat = obj.droop.calculate_vdq_hat(vdq, zeta);
             omega = obj.droop.calculate_omega(P);
 
             % Calculate modulation signal
-            m = obj.vsc_controller.calculate_m(vdq, Idq, omega, vdq_hat, isdq, x_vdq, x_idq);
+            m = obj.vsc_controller.calculate_m(vdq, idq, omega, vdq_hat, isdq, x_vdq, x_idq);
 
             % Calculate intermediate signals
             ix = (1/2) * transpose(m) * isdq;
@@ -80,16 +72,16 @@ classdef gfmi_droop < component
             idc = i_tau;
 
             % Calculate dx
-            [d_vdc, d_isdq, d_vdq] = obj.vsc.get_dx(idc, vdc, ix, isdq, Idq, omega, vdq, vsdq);
+            [d_vdc, d_isdq, d_vdq, d_idq] = obj.vsc.get_dx(idc, vdc, ix, isdq, idq, omega, vdq, vsdq, Vdq);
             d_i_tau = obj.dc_source.get_dx(i_tau, vdc, P, ix);
             [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(vdq, isdq, vdq_hat);
             [d_delta, d_zeta, d_domega] = obj.droop.get_dx(P, vdq, domega);
 
-            dx = [d_vdc; d_isdq; d_vdq; d_i_tau; d_x_vdq; d_x_idq; d_delta; d_zeta; d_domega];
+            dx = [d_vdc; d_isdq; d_vdq; d_idq; d_i_tau; d_x_vdq; d_x_idq; d_delta; d_zeta; d_domega];
 
             % Calculate constraint
             I_ = [cos(delta), -sin(delta);
-                  sin(delta), cos(delta)] * Idq;
+                  sin(delta), cos(delta)] * idq;
             con = I - I_;
         end
 
@@ -106,15 +98,17 @@ classdef gfmi_droop < component
             R_f = obj.vsc.R_f;
             C_f = obj.vsc.C_f;
             L_f = obj.vsc.L_f;
+            L_g = obj.vsc.L_g;
 
             % Calculation of steady state values of angle difference and
             % converter terminal voltage
-            delta_st = Vangle + atan((P * obj.Xg) / (Vabs^2 + Q * obj.Xg));
-            v_st = P * obj.Xg / (Vabs * sin(delta_st - Vangle));
+            delta_st = Vangle + atan((P * L_g) / (Vabs^2 + Q * L_g));
+            v_st = P * L_g / (Vabs * sin(delta_st - Vangle));
 
             % Convert from bus to converter reference frame
             id_st = real(I) * cos(delta_st) + imag(I) * sin(delta_st);
             iq_st = -real(I) * sin(delta_st) + imag(I) * cos(delta_st);
+            idq_st = [id_st; iq_st];
 
             % Definition of steady state values
             vdc_st = obj.dc_source.vdc_st;
@@ -133,7 +127,7 @@ classdef gfmi_droop < component
 
             domega_st = 0;
 
-            obj.x_equilibrium = [vdc_st; isdq_st; vdq_st; i_tau_st; x_vdq_st; x_idq_st; delta_st; zeta_st; domega_st];
+            obj.x_equilibrium = [vdc_st; isdq_st; vdq_st; idq_st; i_tau_st; x_vdq_st; x_idq_st; delta_st; zeta_st; domega_st];
             obj.V_equilibrium = V;
             obj.I_equilibrium = I;
 

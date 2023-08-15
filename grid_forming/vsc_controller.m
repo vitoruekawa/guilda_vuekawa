@@ -40,9 +40,9 @@ classdef vsc_controller < handle
         end
 
         % Modulation
-        function m = calculate_m(obj, vdq, Idq, omega, vdq_hat, isdq, x_vdq, x_idq)
+        function m = calculate_m(obj, vdq, idq, omega, vdq_hat, isdq, x_vdq, x_idq)
             % AC voltage control
-            obj.isdq_st = Idq + obj.C_f * omega * [0, -1; 1, 0] * vdq + obj.Kp_v * eye(2) * (vdq_hat - vdq) + obj.Ki_v * eye(2) * x_vdq;
+            obj.isdq_st = idq + obj.C_f * omega * [0, -1; 1, 0] * vdq + obj.Kp_v * eye(2) * (vdq_hat - vdq) + obj.Ki_v * eye(2) * x_vdq;
 
             % AC current control
             vsdq_st = vdq + (obj.R_f * eye(2) + obj.L_f * omega * [0, -1; 1, 0]) * isdq + obj.Kp_i * eye(2) * (obj.isdq_st - isdq) + obj.Ki_i * eye(2) * x_idq;

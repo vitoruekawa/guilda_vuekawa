@@ -1,8 +1,9 @@
 %% Definition of the power network
-load_gfmi_params3;
-comp = gfmi_droop(vsc_params,dc_source_params,controller_params,ref_model_params, 0.082726);
+load_droop_params;
+comp = gfmi_droop(vsc_params,dc_source_params,controller_params,ref_model_params);
 net = network_IEEE9bus();
 net.a_bus{2}.set_component(comp);
+net.a_bus{3}.set_component(comp);
 
 % con = controller_broadcast_PI_AGC(net, [1,3],[1,3],-10, -500);
 % net.add_controller_global(con);
@@ -15,9 +16,9 @@ Ieq = comp.I_equilibrium;
 [dx,con] = comp.get_dx_constraint(0, xeq, [real(Veq);imag(Veq)],[real(Ieq);imag(Ieq)],[0,0]);
 
 %% Simulation of power system
-time = [0, 1, 25, 100];
+time = [0, 1, 2, 5];
 u_idx = 8;
-u = [   0,            0,         0.75,           0.75;...
+u = [   0.75,         0.75,         0.75,           0.75;...
         0,            0,            0,              0];
 
 out1 = net.simulate(time, u, u_idx);
@@ -29,11 +30,11 @@ omega1 = out1.X{1}(:,2);
 plot(sampling_time, omega1, 'LineWidth', 2)
 hold on
 
-omega2 = out1.X{2}(:,13);
+omega2 = out1.X{2}(:,15);
 plot(sampling_time, omega2, 'LineWidth', 2)
 hold on
 
-omega3 = out1.X{3}(:,2);
+omega3 = out1.X{3}(:,15);
 plot(sampling_time, omega3, 'LineWidth', 2)
 hold on
 
