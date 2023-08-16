@@ -28,7 +28,7 @@ classdef droop < handle
         function [d_delta, d_zeta, d_domega] = get_dx(obj, P, vdq, domega)
             d_delta = obj.omega_st * obj.d_w * (obj.P_st - P);
             d_zeta = obj.Ki * (obj.V_st - norm(vdq)); 
-            d_domega = d_delta/obj.omega_st - domega;
+            d_domega = d_delta / obj.omega_st - domega;
         end
 
         function vdq_hat = calculate_vdq_hat(obj, vdq, zeta)

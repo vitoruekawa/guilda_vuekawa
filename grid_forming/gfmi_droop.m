@@ -88,7 +88,7 @@ classdef gfmi_droop < component
         function set_equilibrium(obj, V, I)
             % Power flow variables 
             Vangle = angle(V);
-            Vabs =  abs(V);
+            Vabs = abs(V);
             Pow = conj(I) * V;
             P = real(Pow);
             Q = imag(Pow);
