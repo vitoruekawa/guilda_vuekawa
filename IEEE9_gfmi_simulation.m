@@ -1,6 +1,6 @@
 %% Definition of the power network
 load_droop_params;
-comp = gfmi_droop(vsc_params,dc_source_params,controller_params,ref_model_params);
+comp = gfmi_droop(vsc_params,controller_params,ref_model_params);
 net = network_IEEE9bus();
 net.a_bus{2}.set_component(comp);
 net.a_bus{3}.set_component(comp);
@@ -16,7 +16,7 @@ Ieq = comp.I_equilibrium;
 [dx,con] = comp.get_dx_constraint(0, xeq, [real(Veq);imag(Veq)],[real(Ieq);imag(Ieq)],[0,0]);
 
 %% Simulation of power system
-time = [0, 1, 2, 5];
+time = [0, 1, 2, 10];
 u_idx = 8;
 u = [   0.75,         0.75,         0.75,           0.75;...
         0,            0,            0,              0];
@@ -30,11 +30,11 @@ omega1 = out1.X{1}(:,2);
 plot(sampling_time, omega1, 'LineWidth', 2)
 hold on
 
-omega2 = out1.X{2}(:,15);
+omega2 = out1.X{2}(:,13);
 plot(sampling_time, omega2, 'LineWidth', 2)
 hold on
 
-omega3 = out1.X{3}(:,15);
+omega3 = out1.X{3}(:,13);
 plot(sampling_time, omega3, 'LineWidth', 2)
 hold on
 
