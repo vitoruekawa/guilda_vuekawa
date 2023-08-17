@@ -32,8 +32,8 @@ classdef vsm < handle
             d_omega = (obj.P_st - P) / obj.Jr + obj.Dp * (1 - omega) / obj.Jr;
         end
         
-        function vdq_hat = calculate_vdq_hat(obj, Vdq, zeta, omega)
-            i_f = obj.Kp * (obj.V_st - norm(Vdq)) + zeta;
+        function vdq_hat = calculate_vdq_hat(obj, vdq, zeta, omega)
+            i_f = obj.Kp * (obj.V_st - norm(vdq)) + zeta;
             vdq_hat = [2 * i_f * omega; 0];
         end
         

@@ -1,8 +1,6 @@
 classdef vsc < handle
 
     properties
-        C_dc
-        R_dc
         L_f
         R_f
         C_f
@@ -13,8 +11,6 @@ classdef vsc < handle
     methods
 
         function obj = vsc(vsc_params)
-            obj.C_dc = vsc_params{:, 'C_dc'};
-            obj.R_dc = vsc_params{:, 'R_dc'};
             obj.L_f = vsc_params{:, 'L_f'};
             obj.R_f = vsc_params{:, 'R_f'};
             obj.C_f = vsc_params{:, 'C_f'};
