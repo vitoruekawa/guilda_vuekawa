@@ -1,6 +1,7 @@
 
 classdef vsm < handle
     properties
+        omega_st
         P_st
         V_st
         Jr
@@ -11,6 +12,7 @@ classdef vsm < handle
     
     methods
         function obj = vsm(vsm_params)
+            obj.omega_st = vsm_params{:, 'omega_st'};
             obj.Jr = vsm_params{:, 'Jr'};
             obj.Dp = vsm_params{:, 'Dp'};
             obj.Kp = vsm_params{:, 'Kp'};
@@ -26,9 +28,9 @@ classdef vsm < handle
         end
         
         % State variables: theta and zeta (PI controller)
-        function [d_delta, d_zeta, d_omega] = get_dx(obj, P, Vdq, omega)
-            d_delta = omega - 1;
-            d_zeta = obj.Ki * (obj.V_st - norm(Vdq));
+        function [d_delta, d_zeta, d_omega] = get_dx(obj, P, vdq, omega)
+            d_delta = obj.omega_st * (omega - 1);
+            d_zeta = obj.Ki * (obj.V_st - norm(vdq));
             d_omega = (obj.P_st - P) / obj.Jr + obj.Dp * (1 - omega) / obj.Jr;
         end
         

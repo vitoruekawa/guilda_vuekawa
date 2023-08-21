@@ -1,6 +1,6 @@
 %% Definition of the power network
-load_droop_params;
-comp = gfmi_droop(vsc_params,controller_params,ref_model_params);
+load_vsm_params;
+comp = gfmi_vsm(vsc_params,controller_params,ref_model_params);
 net = network_IEEE9bus();
 net.a_bus{2}.set_component(comp);
 net.a_bus{3}.set_component(comp);
@@ -31,12 +31,18 @@ plot(sampling_time, omega1, 'LineWidth', 2)
 hold on
 
 omega2 = out1.X{2}(:,13);
-plot(sampling_time, omega2, 'LineWidth', 2)
+plot(sampling_time, omega2 - 1, 'LineWidth', 2)
 hold on
 
 omega3 = out1.X{3}(:,13);
-plot(sampling_time, omega3, 'LineWidth', 2)
+plot(sampling_time, omega3 - 1, 'LineWidth', 2)
 hold on
+
+title('Frequency deviation of 2 synchronous machines and 1 VSM')
+legend('SM1', 'VSM', 'SM3')
+xlabel('Time (s)', 'FontSize', 15)
+ylabel('Frequency deviation (pu)', 'FontSize', 15)
+hold off
 
 %% Plot of the state variables of the GFMI
 figure

@@ -26,10 +26,6 @@ classdef gfmi_vsm < component
         end
 
         function [dx, con] = get_dx_constraint(obj, t, x, V, I, u)
-            % Attention, vdq != Vdq
-            % vdq is the terminal voltage of the VSC
-            % Vdq is the bus voltage converted to converter reference.
-
             % VSC state variables
             isdq = x(1:2);
             vdq = x(3:4);
@@ -59,6 +55,8 @@ classdef gfmi_vsm < component
             m = obj.vsc_controller.calculate_m(vdq, idq, omega, vdq_hat, isdq, x_vdq, x_idq);
 
             % Calculate intermediate signals
+            % Check modulation and the calculation of this signal
+            % In the case of an ideal contant DC source, how should it work?
             vsdq = (1/2) * m * obj.vsc_controller.vdc_st;
 
             % Calculate dx
