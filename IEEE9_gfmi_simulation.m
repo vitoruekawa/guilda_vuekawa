@@ -1,54 +1,104 @@
-%% Definition of the power network
+clearvars; clc;
 load_vsm_params;
-comp = gfmi_vsm(vsc_params,controller_params,ref_model_params);
-net = network_IEEE9bus();
-net.a_bus{2}.set_component(comp);
-net.a_bus{3}.set_component(comp);
+gfmi = gfmi_vsm(vsc_params,controller_params,ref_model_params);
 
-% con = controller_broadcast_PI_AGC(net, [1,3],[1,3],-10, -500);
-% net.add_controller_global(con);
+%% Creation of power networks
+x_lim = [0, 50];
+y_lim = [-inf, inf];
+plot_separated = false;
 
-%% Check equilibrium point of the GFMI
-comp = net.a_bus{2}.component;
-xeq = comp.x_equilibrium;
-Veq = comp.V_equilibrium;
-Ieq = comp.I_equilibrium;
-[dx,con] = comp.get_dx_constraint(0, xeq, [real(Veq);imag(Veq)],[real(Ieq);imag(Ieq)],[0,0]);
+net1 = network_IEEE9bus();
+net2 = network_IEEE9bus();
+net2.a_bus{2}.set_component(gfmi);
+net2.initialize();
 
-%% Simulation of power system
-time = [0, 1, 2, 10];
+%% Simulation settings
+time = [0,1,5,60];
+
+% 10% load increase at bus 8
 u_idx = 8;
-u = [   0.75,         0.75,         0.75,           0.75;...
-        0,            0,            0,              0];
+u = [0,  0.1, 0.1, 0.1;...
+     0,    0,   0,   0];
+out1 = net1.simulate(time, u, u_idx);
+out2 = net2.simulate(time, u, u_idx);
 
-out1 = net.simulate(time, u, u_idx);
-sampling_time = out1.t;
+% Initial value disturbance
+% option1 = struct();
+% option1.x0_sys = net1.x_equilibrium;
+% option1.x0_sys(1) = option1.x0_sys(1) + pi/6;
+% option1.x0_sys(3) = option1.x0_sys(3) + 0.1;
+% option2 = struct();
+% option2.x0_sys = net2.x_equilibrium;
+% option2.x0_sys(1) = option2.x0_sys(1) + pi/6;
+% option2.x0_sys(3) = option2.x0_sys(3) + 0.1;
+% out1 = net1.simulate(time, option1);
+% out2 = net2.simulate(time, option2);
 
-%% Plot of frequency deviation of the three machines
-figure
+% Ground fault disturbance
+% option = struct();
+% option.fault = {{[0 0.05], 1}};
+% out1 = net1.simulate(time, option);
+% out2 = net2.simulate(time, option);
+
+%% Read output data
+sampling_time1 = out1.t;
+sampling_time2 = out2.t;
+
 omega1 = out1.X{1}(:,2);
-plot(sampling_time, omega1, 'LineWidth', 2)
-hold on
+omega2 = out1.X{2}(:,2);
+omega3 = out1.X{3}(:,2);
 
-omega2 = out1.X{2}(:,13);
-plot(sampling_time, omega2 - 1, 'LineWidth', 2)
-hold on
+omega4 = out2.X{1}(:,2);
+omega5 = out2.X{2}(:,13) - 1;
+omega6 = out2.X{3}(:,2);
 
-omega3 = out1.X{3}(:,13);
-plot(sampling_time, omega3 - 1, 'LineWidth', 2)
-hold on
-
-title('Frequency deviation of 2 synchronous machines and 1 VSM')
-legend('SM1', 'VSM', 'SM3')
-xlabel('Time (s)', 'FontSize', 15)
-ylabel('Frequency deviation (pu)', 'FontSize', 15)
-hold off
-
-%% Plot of the state variables of the GFMI
-figure
-for idx = 1 : 12
-    subplot(4, 3, idx)
-    y = out1.X{2}(:, idx);
-    plot(sampling_time, y, 'LineWidth', 2)
+%% Plot graphs
+if plot_separated
+    figure;
+    subplot(2,1,1)
+    plot(sampling_time1, 60 * (1 + omega1),'LineWidth',2)
+    hold on
+    plot(sampling_time1, 60 * (1 + omega2),'LineWidth',2)
+    hold on
+    plot(sampling_time1, 60 * (1 + omega3),'LineWidth',2)
+    grid on
+    legend('Scenario 1: SM1', 'Scenario 1: SM2', 'Scenario 1: SM3')
     xlabel('Time (s)', 'FontSize', 15)
+    ylabel('Frequency (Hz)', 'FontSize', 15)
+    xlim(x_lim)
+    ylim(y_lim)
+
+    subplot(2,1,2)
+    plot(sampling_time2, 60 * (1 + omega4),'LineWidth',2)
+    hold on
+    plot(sampling_time2, 60 * (1 + omega5),'LineWidth',2)
+    hold on
+    plot(sampling_time2, 60 * (1 + omega6),'LineWidth',2)
+    grid on
+    legend('Scenario 2: SM1', 'Scenario 2: VSG-GFMI','Scenario 2: SM3')
+    xlabel('Time (s)', 'FontSize', 15)
+    ylabel('Frequency (Hz)', 'FontSize', 15)
+    xlim(x_lim)
+    ylim(y_lim)
+else
+    figure; grid on;
+    plot(sampling_time1, 60*(1+omega1),'LineWidth',2)
+    hold on
+    plot(sampling_time1, 60*(1+omega2),'LineWidth',2)
+    hold on
+    plot(sampling_time1, 60*(1+omega3),'LineWidth',2)
+    hold on
+    plot(sampling_time2, 60*(1+omega4),'--','LineWidth',2)
+    hold on
+    plot(sampling_time2, 60*(1+omega5),'--','LineWidth',2)
+    hold on
+    plot(sampling_time2, 60*(1+omega6),'--','LineWidth',2)
+    grid on
+    legend('Scenario 1: SM1', 'Scenario 1: SM2', 'Scenario 1: SM3', ...
+            'Scenario 2: SM1', 'Scenario 2: VSG-GFMI','Scenario 2: SM3')
+    % title('Initial value disturbance (\delta_1(0) = \delta_1^{*} + \pi/6; E_1(0) = E_1^* + 0.1)')
+    xlabel('Time (s)', 'FontSize', 15)
+    ylabel('Frequency (Hz)', 'FontSize', 15)
+    xlim(x_lim)
+    ylim(y_lim)
 end

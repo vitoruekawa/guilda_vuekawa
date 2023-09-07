@@ -81,9 +81,9 @@ classdef network_IEEE9bus < power_network
                 g = generator(omega0, machinery(idx, :));
                 ex = excitation(excitation{:, 'No_bus'}==i, :);
                 g.set_avr(avr_sadamoto2019(ex));
-                p = pss_data(pss_data{:, 'No_bus'}==i, :);
-                % g.set_pss(pss(p));
-                g.set_pss(pss_IEEE_PSS1(p));
+                % p = pss_data(pss_data{:, 'No_bus'}==i, :);
+                % % g.set_pss(pss(p));
+                % g.set_pss(pss_IEEE_PSS1(p));
             end
             obj.a_bus{end}.set_component(g)
         end
