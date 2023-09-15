@@ -3,7 +3,7 @@ load_vsm_params;
 gfmi = gfmi_vsm(vsc_params,controller_params,ref_model_params);
 
 %% Creation of power networks
-avr_type = 'avr2019sadamoto'; pss = false;
+avr_type = false; pss = false;
 plot_separated = false;
 x_lim = [0, 50];
 y_lim = [-inf, inf];
@@ -12,6 +12,11 @@ net1 = network_sample3bus(avr_type, pss);
 net2 = network_sample3bus(avr_type, pss);
 net2.a_bus{3}.set_component(gfmi);
 net2.initialize();
+
+con1 = controller_broadcast_PI_AGC(net1,[1],[1],-10,-500);
+con2 = controller_broadcast_PI_AGC(net2,[1],[1],-10,-500);
+net1.add_controller_global(con1);
+net2.add_controller_global(con2);
 
 %% Simulation settings
 time = [0,1,5,60];
@@ -24,22 +29,22 @@ time = [0,1,5,60];
 % out2 = net2.simulate(time, u, u_idx);
 
 % Initial value disturbance
-option1 = struct();
-option1.x0_sys = net1.x_equilibrium;
-option1.x0_sys(1) = option1.x0_sys(1) + pi/6;
-option1.x0_sys(3) = option1.x0_sys(3) + 0.1;
-option2 = struct();
-option2.x0_sys = net2.x_equilibrium;
-option2.x0_sys(1) = option2.x0_sys(1) + pi/6;
-option2.x0_sys(3) = option2.x0_sys(3) + 0.1;
-out1 = net1.simulate(time, option1);
-out2 = net2.simulate(time, option2);
+% option1 = struct();
+% option1.x0_sys = net1.x_equilibrium;
+% option1.x0_sys(1) = option1.x0_sys(1) + pi/6;
+% option1.x0_sys(3) = option1.x0_sys(3) + 0.1;
+% option2 = struct();
+% option2.x0_sys = net2.x_equilibrium;
+% option2.x0_sys(1) = option2.x0_sys(1) + pi/6;
+% option2.x0_sys(3) = option2.x0_sys(3) + 0.1;
+% out1 = net1.simulate(time, option1);
+% out2 = net2.simulate(time, option2);
 
 % Ground fault disturbance
-% option = struct();
-% option.fault = {{[0 0.05], 1}};
-% out1 = net1.simulate(time, option);
-% out2 = net2.simulate(time, option);
+option = struct();
+option.fault = {{[0 0.05], 1}};
+out1 = net1.simulate(time, option);
+out2 = net2.simulate(time, option);
 
 %% Read output data
 sampling_time1 = out1.t;

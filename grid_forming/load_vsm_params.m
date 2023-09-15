@@ -34,7 +34,7 @@ Ki_i = 100;
 
 %% Droop control
 Jr = 12;
-Dp = 10.2;
+Dp = 10.3;
 Kp = 0.001;
 Ki = 0.5;
 

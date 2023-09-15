@@ -3,24 +3,29 @@ load_vsm_params;
 gfmi = gfmi_vsm(vsc_params,controller_params,ref_model_params);
 
 %% Creation of power networks
-x_lim = [0, 50];
+x_lim = [0, 30];
 y_lim = [-inf, inf];
-plot_separated = false;
+plot_separated = true;
 
 net1 = network_IEEE9bus();
 net2 = network_IEEE9bus();
 net2.a_bus{2}.set_component(gfmi);
 net2.initialize();
 
+% con1 = controller_broadcast_PI_AGC(net1,[1,3],[1,3],-10,-500);
+% con2 = controller_broadcast_PI_AGC(net2,[1,3],[1,3],-10,-500);
+% net1.add_controller_global(con1);
+% net2.add_controller_global(con2);
+
 %% Simulation settings
-time = [0,1,5,60];
+time = [0,1,5,50];
 
 % 10% load increase at bus 8
-u_idx = 8;
-u = [0,  0.1, 0.1, 0.1;...
-     0,    0,   0,   0];
-out1 = net1.simulate(time, u, u_idx);
-out2 = net2.simulate(time, u, u_idx);
+% u_idx = 8;
+% u = [0,  0.1, 0.1, 0.1;...
+%      0,    0,   0,   0];
+% out1 = net1.simulate(time, u, u_idx);
+% out2 = net2.simulate(time, u, u_idx);
 
 % Initial value disturbance
 % option1 = struct();
@@ -35,10 +40,10 @@ out2 = net2.simulate(time, u, u_idx);
 % out2 = net2.simulate(time, option2);
 
 % Ground fault disturbance
-% option = struct();
-% option.fault = {{[0 0.05], 1}};
-% out1 = net1.simulate(time, option);
-% out2 = net2.simulate(time, option);
+option = struct();
+option.fault = {{[0 0.05], 1}};
+out1 = net1.simulate(time, option);
+out2 = net2.simulate(time, option);
 
 %% Read output data
 sampling_time1 = out1.t;
@@ -96,7 +101,7 @@ else
     grid on
     legend('Scenario 1: SM1', 'Scenario 1: SM2', 'Scenario 1: SM3', ...
             'Scenario 2: SM1', 'Scenario 2: VSG-GFMI','Scenario 2: SM3')
-    % title('Initial value disturbance (\delta_1(0) = \delta_1^{*} + \pi/6; E_1(0) = E_1^* + 0.1)')
+    title('10% Load Increase at Bus 8')
     xlabel('Time (s)', 'FontSize', 15)
     ylabel('Frequency (Hz)', 'FontSize', 15)
     xlim(x_lim)
