@@ -41,8 +41,8 @@ classdef gfmi_vsm < component
             omega = x(13);
 
             % Convert from grid to converter reference
-            Vdq = [cos(delta), sin(delta);
-                   -sin(delta), cos(delta)] * V;
+            Vdq = [sin(delta), -cos(delta);
+                   cos(delta), sin(delta)] * V;
 
             % Active power 
             % (equal both on sending and receiving ends)
@@ -67,8 +67,8 @@ classdef gfmi_vsm < component
             dx = [d_isdq; d_vdq; d_idq; d_x_vdq; d_x_idq; d_delta; d_zeta; d_omega];
 
             % Calculate constraint
-            I_ = [cos(delta), -sin(delta);
-                  sin(delta), cos(delta)] * idq;
+            I_ = [sin(delta), cos(delta);
+                  -cos(delta), sin(delta)] * idq;
             con = I - I_;
         end
 
@@ -90,13 +90,14 @@ classdef gfmi_vsm < component
             v_st = P * L_g / (Vabs * sin(delta_st - Vangle));
 
             % Convert from bus to converter reference frame
-            id_st = real(I) * cos(delta_st) + imag(I) * sin(delta_st);
-            iq_st = -real(I) * sin(delta_st) + imag(I) * cos(delta_st);
-            idq_st = [id_st; iq_st];
+            Vd_st = real(V) * sin(delta_st) - imag(V) * cos(delta_st);
+            Vq_st = real(V) * cos(delta_st) + imag(V) * sin(delta_st);
+
+            idq_st = [(v_st - Vq_st) / L_g; Vd_st / L_g];
 
             % Definition of steady state values
-            isdq_st = [id_st; iq_st + C_f * v_st];
-            vdq_st = [v_st; 0];
+            isdq_st = [idq_st(1) - C_f * v_st; idq_st(2)];
+            vdq_st = [0; v_st];
 
             x_vdq_st = [0; 0];
             x_idq_st = [0; 0];
