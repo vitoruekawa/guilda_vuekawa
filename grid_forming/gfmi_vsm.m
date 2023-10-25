@@ -87,13 +87,14 @@ classdef gfmi_vsm < component
             % Calculation of steady state values of angle difference and
             % converter terminal voltage
             delta_st = Vangle + atan((P * L_g) / (Vabs^2 + Q * L_g));
+            % v_st = (Q * L_g + Vabs^2) / (Vabs * cos(delta_st - Vangle));
             v_st = P * L_g / (Vabs * sin(delta_st - Vangle));
 
             % Convert from bus to converter reference frame
             Vd_st = real(V) * sin(delta_st) - imag(V) * cos(delta_st);
             Vq_st = real(V) * cos(delta_st) + imag(V) * sin(delta_st);
 
-            idq_st = [(v_st - Vq_st) / L_g; Vd_st / L_g];
+            idq_st = [-(Vq_st - v_st) / L_g; Vd_st / L_g];
 
             % Definition of steady state values
             isdq_st = [idq_st(1) - C_f * v_st; idq_st(2)];
