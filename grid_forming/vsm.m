@@ -36,7 +36,7 @@ classdef vsm < handle
         
         function vdq_hat = calculate_vdq_hat(obj, vdq, zeta, omega)
             i_f = obj.Kp * (obj.V_st - norm(vdq)) + zeta;
-            vdq_hat = [0; 2 * i_f * omega];
+            vdq_hat = [vdq(1); 2 * i_f * omega];
         end
         
         function set_constants(obj, V_st, P_st)

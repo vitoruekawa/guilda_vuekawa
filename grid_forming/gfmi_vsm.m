@@ -44,7 +44,7 @@ classdef gfmi_vsm < component
             Vdq = [sin(delta), -cos(delta);
                    cos(delta), sin(delta)] * V;
 
-            % Active power 
+            % Active power
             % (equal both on sending and receiving ends)
             P = transpose(V) * I;
 
@@ -67,15 +67,26 @@ classdef gfmi_vsm < component
             dx = [d_isdq; d_vdq; d_idq; d_x_vdq; d_x_idq; d_delta; d_zeta; d_omega];
 
             % Calculate constraint
-            I_ = [sin(delta), cos(delta);
-                  -cos(delta), sin(delta)] * idq;
-            con = I - I_;
+            L_g = obj.vsc.L_g;
+            Id = (vdq(2) - Vdq(2)) / L_g;
+            Iq = (Vdq(1) - vdq(1)) / L_g;
+
+            Ir = Id * sin(delta) + Iq * cos(delta); 
+            Ii =- Id * cos(delta) + Iq * sin(delta);
+            con = I - [Ir; Ii];
+
+            % I_ = [sin(delta), cos(delta);
+            %       -cos(delta), sin(delta)] * idq;
+            % con = I - I_;
         end
 
         function set_equilibrium(obj, V, I)
-            % Power flow variables 
+            % Power flow variables
             Vangle = angle(V);
-            Vabs =  abs(V);
+            Vabs = abs(V);
+            Iangle = angle(I);
+            Iabs = abs(I);
+
             Pow = conj(I) * V;
             P = real(Pow);
             Q = imag(Pow);
@@ -84,28 +95,32 @@ classdef gfmi_vsm < component
             C_f = obj.vsc.C_f;
             L_g = obj.vsc.L_g;
 
-            % Calculation of steady state values of angle difference and
-            % converter terminal voltage
-            delta_st = Vangle + atan((P * L_g) / (Vabs^2 + Q * L_g));
-            % v_st = (Q * L_g + Vabs^2) / (Vabs * cos(delta_st - Vangle));
-            v_st = P * L_g / (Vabs * sin(delta_st - Vangle));
+            syms delta
+            eq = P * sin(Vangle - delta) == Q * cos(Vangle - delta) + Vabs * Iabs * sin(Iangle - delta);
+            sol = solve(eq, delta);
+            result = eval(sol);
+            delta_st = norm(result(1));
 
-            % Convert from bus to converter reference frame
-            Vd_st = real(V) * sin(delta_st) - imag(V) * cos(delta_st);
-            Vq_st = real(V) * cos(delta_st) + imag(V) * sin(delta_st);
+            Vd = real(V) * sin(delta_st) - imag(V) * cos(delta_st);
+            Vq = real(V) * cos(delta_st) + imag(V) * sin(delta_st);
+            Vdq = [Vd; Vq];
 
-            idq_st = [-(Vq_st - v_st) / L_g; Vd_st / L_g];
+            Id = real(I) * sin(delta_st) - imag(I) * cos(delta_st);
+            Iq = real(I) * cos(delta_st) + imag(I) * sin(delta_st);
+            Idq = [Id; Iq];
+
+            vdq_st = L_g * [0, -1; 1, 0] * Idq + Vdq;
+            idq_st = Idq;
 
             % Definition of steady state values
-            isdq_st = [idq_st(1) - C_f * v_st; idq_st(2)];
-            vdq_st = [0; v_st];
+            isdq_st = idq_st + [0, -1; 1, 0] * C_f * vdq_st;
 
             x_vdq_st = [0; 0];
             x_idq_st = [0; 0];
-            zeta_st = v_st / 2;
+            zeta_st = vdq_st(2) / 2;
 
             % Set reference values
-            obj.vsm.set_constants(v_st, P);
+            obj.vsm.set_constants(norm(vdq_st), P);
 
             omega_st = 1;
 
