@@ -35,124 +35,150 @@ classdef gfmi_vsm_1axis < component
             % VSC state variables
             isdq = x(1:2);
             vdq = x(3:4);
-            idq = x(5:6);
 
             % VSC controller state variables
-            x_vdq = x(7:8);
-            x_idq = x(9:10);
+            x_vdq = x(5:6);
+            x_idq = x(7:8);
 
             % Reference model state variables
-            delta = x(11);
-            domega = x(12);
-            Eq = x(13);
+            delta = x(9);
+            domega = x(10);
+            Eq = x(11);
 
             nx_avr = obj.avr.get_nx();
             nx_pss = obj.pss.get_nx();
             nx_gov = obj.governor.get_nx();
 
-            x_avr = x(13+(1:nx_avr));
-            x_pss = x(13+nx_avr+(1:nx_pss));
-            x_gov = x(13+nx_avr+nx_pss+(1:nx_gov));
+            x_avr = x(11 + (1:nx_avr));
+            x_pss = x(11 + nx_avr + (1:nx_pss));
+            x_gov = x(11 + nx_avr + nx_pss + (1:nx_gov));
 
             % Convert from grid to converter reference
-            Vdq = [sin(delta), -cos(delta);
-                   cos(delta), sin(delta)] * V;
+            Idq = [sin(delta), -cos(delta);
+                   cos(delta), sin(delta)] * I;
 
             omega = domega + 1;
 
-            % Active power 
+            % Active power
             % (equal both on sending and receiving ends)
             P = transpose(V) * I;
 
             % Calculate references from grid forming models
-            vdq_hat = [0; Eq];
+            vdq_hat = obj.vsm.calculate_vdq_hat(Idq, Eq);
 
             % Calculate modulation signal
-            m = obj.vsc_controller.calculate_m(vdq, idq, omega, vdq_hat, isdq, x_vdq, x_idq);
+            m = obj.vsc_controller.calculate_m(vdq, Idq, omega, vdq_hat, isdq, x_vdq, x_idq);
 
             % Calculate intermediate signals
             vsdq = (1/2) * m * obj.vsc_controller.vdc_st;
 
-            Efd = obj.vsm.get_Efd(Eq, Vdq(2));
+            Efd = obj.vsm.get_Efd(Eq, vdq(2));
 
             % Calculate dx
-            [d_isdq, d_vdq, d_idq] = obj.vsc.get_dx(isdq, idq, omega, vdq, vsdq, Vdq);
+            [d_isdq, d_vdq] = obj.vsc.get_dx(isdq, Idq, omega, vdq, vsdq);
             [d_x_vdq, d_x_idq] = obj.vsc_controller.get_dx(vdq, isdq, vdq_hat);
             [dx_pss, v] = obj.pss.get_u(x_pss, domega);
-            [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, norm(V), Efd, u(1)-v);
+            [dx_avr, Vfd] = obj.avr.get_Vfd(x_avr, norm(V), Efd, u(1) - v);
             [dx_gov, Pmech] = obj.governor.get_P(x_gov, domega, u(2));
             [d_delta, d_domega, d_Eq] = obj.vsm.get_dx(P, Pmech, Vfd, domega, Efd);
 
-            dx = [d_isdq; d_vdq; d_idq; d_x_vdq; d_x_idq; d_delta; d_domega; d_Eq; dx_avr; dx_pss; dx_gov];
+            dx = [d_isdq; d_vdq; d_x_vdq; d_x_idq; d_delta; d_domega; d_Eq; dx_avr; dx_pss; dx_gov];
 
             % Calculate constraint
-            I_ = [sin(delta), cos(delta);
-                  -cos(delta), sin(delta)] * idq;
-            con = I - I_;
+            % L_g = obj.vsc.L_g;
+            % Id = (vdq(2) - Vdq(2)) / L_g; ...
+            % Iq = (Vdq(1) - vdq(1)) / L_g;
+
+            % Ir = Id * sin(delta) + Iq * cos(delta);
+            % Ii =- Id * cos(delta) + Iq * sin(delta);
+            % con = I - [Ir; Ii];
+
+            % I_ = [sin(delta), cos(delta);
+            %       -cos(delta), sin(delta)] * idq;
+            % con = I - I_;
+
+            V_ = [sin(delta), cos(delta);
+                  -cos(delta), sin(delta)] * vdq;
+            con = V - V_;
         end
 
         function set_equilibrium(obj, V, I)
-            % Power flow variables 
+            % Power flow variables
             Vangle = angle(V);
-            Vabs =  abs(V);
+            Vabs = abs(V);
+            Iangle = angle(I);
+            Iabs = abs(I);
+
             Pow = conj(I) * V;
             P = real(Pow);
             Q = imag(Pow);
 
             % Get converter parameters
             C_f = obj.vsc.C_f;
-            L_g = obj.vsc.L_g;
 
-            % Calculation of steady state values of angle difference and
-            % converter terminal voltage
-            % delta_st = Vangle + atan((P * L_g) / (Vabs^2 + Q * L_g));
+            % syms delta
+            % eq = P * sin(Vangle - delta) == Q * cos(Vangle - delta) + Vabs * Iabs * sin(Iangle - delta);
+            % sol = solve(eq, delta);
+            % result = eval(sol);
+            % delta_st = norm(result(1));
+
             [delta_st, domega_st, Eq_st, Vfd] = obj.vsm.get_equilibrium(P, Q, Vabs, Vangle);
 
             x_avr_st = obj.avr.initialize(Vfd, Vabs);
-            x_gov_st = obj.governor.initialize(P);
             x_pss_st = obj.pss.initialize();
+            x_gov_st = obj.governor.initialize(P);
 
-            % Convert from bus to converter reference frame
-            Vd_st = real(V) * sin(delta_st) - imag(V) * cos(delta_st);
-            Vq_st = real(V) * cos(delta_st) + imag(V) * sin(delta_st);
+            Vd = real(V) * sin(delta_st) - imag(V) * cos(delta_st);
+            Vq = real(V) * cos(delta_st) + imag(V) * sin(delta_st);
+            Vdq = [Vd; Vq];
 
-            idq_st = [-(Vq_st - Eq_st) / L_g; Vd_st / L_g];
+            Id = real(I) * sin(delta_st) - imag(I) * cos(delta_st);
+            Iq = real(I) * cos(delta_st) + imag(I) * sin(delta_st);
+            Idq = [Id; Iq];
+
+            vdq_st = Vdq;
+            idq_st = Idq;
 
             % Definition of steady state values
-            isdq_st = [idq_st(1) - C_f * Eq_st; idq_st(2)];
-            vdq_st = [0; Eq_st];
+            isdq_st = idq_st + [0, -1; 1, 0] * C_f * vdq_st;
 
             x_vdq_st = [0; 0];
             x_idq_st = [0; 0];
 
-            obj.x_equilibrium = [isdq_st; vdq_st; idq_st; x_vdq_st; x_idq_st; delta_st; domega_st; Eq_st; x_avr_st; x_pss_st; x_gov_st];
+            obj.x_equilibrium = [isdq_st; vdq_st; x_vdq_st; x_idq_st; delta_st; domega_st; Eq_st; x_avr_st; x_pss_st; x_gov_st];
             obj.V_equilibrium = V;
             obj.I_equilibrium = I;
 
         end
 
         function set_avr(obj, avr)
+
             if isa(avr, 'avr')
                 obj.avr = avr;
             else
-               error(''); 
+                error('');
             end
+
         end
-        
+
         function set_pss(obj, pss)
+
             if isa(pss, 'pss')
                 obj.pss = pss;
             else
                 error('');
             end
+
         end
 
         function set_governor(obj, governor)
+
             if isa(governor, 'governor')
                 obj.governor = governor;
             else
                 error('');
             end
+
         end
 
     end
