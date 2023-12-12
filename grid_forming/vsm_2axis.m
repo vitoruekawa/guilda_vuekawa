@@ -42,6 +42,12 @@ classdef vsm_2axis < handle
             Efq = obj.Xq * Ed / obj.Xq_prime - (obj.Xq / obj.Xq_prime - 1) * Vdq(1);
         end
 
+        function vdq_hat = calculate_vdq_hat(obj, Idq, Ed, Eq)
+            Vd = Ed + obj.Xq_prime * Idq(2);
+            Vq = Eq - obj.Xd_prime * Idq(1);
+            vdq_hat = [Vd; Vq];
+        end
+
         function [d_delta, d_omega, d_Ed, d_Eq] = get_dx(obj, P, Pmech, Vfd, omega, Efd, Efq)
             d_delta = obj.omega_st * omega;
             d_omega = (- obj.D * omega + Pmech - P) / obj.M;
@@ -50,46 +56,19 @@ classdef vsm_2axis < handle
             d_Eq = (-Efd + Vfd) / obj.Tdo;
         end
 
-        % function [delta_st, omega_st, Ed_st, Eq_st, Vfd] = get_equilibrium(obj, P, Q, I)
-        %     syms del e
-        %     Iq = real(I)*cos(del)+imag(I)*sin(del);
-        %     Id = real(I)*sin(del)-imag(I)*cos(del);
-        %     Ed_st = (obj.Xq-obj.Xq_prime)*Iq;
-        %     Vd = obj.Xq_prime * Iq + Ed_st;
-        %     Vq = -obj.Xd_prime * Id + e;
-
-        %     eq1 = P-Vq*(Iq)-Vd*(Id) == 0;
-        %     eq2 = Q-Vq*(Id)+Vd*(Iq) == 0;
-        %     eqs = [eq1; eq2];
-        %     sol = solve(eqs);
-        %     %solve(eq) gives more than 1 solution
-        %     if(sol.e(1)>0);delta_st = double(sol.del(1)); Eq_st = double(sol.e(1));
-        %     else; delta_st = double(sol.del(2)); Eq_st = double(sol.e(2));end
-
-        %     Iq = real(I)*cos(delta_st)+imag(I)*sin(delta_st);
-        %     Id = real(I)*sin(delta_st)-imag(I)*cos(delta_st);
-        %     Ed_st = (obj.Xq-obj.Xq_prime)*Iq;
-
-        %     omega_st = 0;
-        %     Vfd = Eq_st + (obj.Xd-obj.Xd_prime)*Id;
-
-        % end
-
-        function [delta_st, domega_st, Ed_st, Eq_st, Vfd] = get_equilibrium(obj, P, Q, Vabs, Vangle, Iabs, Iangle)
+        function [delta_st, domega_st, Ed_st, Eq_st, Vfd] = get_equilibrium(obj, P, Q, Vabs, Vangle)
 
             delta_st = Vangle + atan((P * obj.Xq) / (Vabs^2 + Q * obj.Xq));
 
             domega_st = 0;
 
-            Eqnum = P ^ 2 * obj.Xd_prime * obj.Xq + Q ^ 2 * obj.Xd_prime * obj.Xq + Vabs ^ 2 * Q * obj.Xq + Vabs ^ 2 * Q * obj.Xd_prime + Vabs ^ 4;
-            Eqden = Vabs * sqrt(P ^ 2 * obj.Xq ^ 2 + Q ^ 2 * obj.Xq ^ 2 + 2 * Vabs ^ 2 * Q * obj.Xq + Vabs ^ 4);
-            Eq_st = Eqnum / Eqden;
+            Vd = Vabs * sin(delta_st - Vangle);
+            Vq = Vabs * cos(delta_st - Vangle);
+            Vfd = (obj.Xd * Vd * P + (obj.Xd * Q + Vabs ^ 2)* Vq) / Vabs^2;
 
-            Ednum = (obj.Xq - obj.Xq_prime) * Vabs * P;
-            Edden = sqrt(P ^ 2 * obj.Xq ^ 2 + Q ^ 2 * obj.Xq ^ 2 + 2 * Vabs ^ 2 * Q * obj.Xq + Vabs ^ 4);
-            Ed_st = Ednum / Edden;
+            Ed_st = (1 - obj.Xq_prime / obj.Xq) * Vd;
+            Eq_st = (1 - obj.Xd_prime / obj.Xd) * Vq + (obj.Xd_prime / obj.Xd) * Vfd;
 
-            Vfd = Eq_st + (obj.Xd - obj.Xd_prime) * Iabs * sin(delta_st - Iangle);
         end
 
     end
