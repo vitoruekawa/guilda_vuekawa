@@ -76,8 +76,11 @@ classdef gfmi_vsm < component
             con = I - [Ir; Ii];
 
             % I_ = [sin(delta), cos(delta);
-            %       -cos(delta), sin(delta)] * idq;
+                  % -cos(delta), sin(delta)] * idq;
             % con = I - I_;
+            % if t > 0
+                % disp(d_idq)
+            % end
         end
 
         function set_equilibrium(obj, V, I)
@@ -95,11 +98,12 @@ classdef gfmi_vsm < component
             C_f = obj.vsc.C_f;
             L_g = obj.vsc.L_g;
 
-            syms delta
-            eq = P * sin(Vangle - delta) == Q * cos(Vangle - delta) + Vabs * Iabs * sin(Iangle - delta);
-            sol = solve(eq, delta);
-            result = eval(sol);
-            delta_st = norm(result(1));
+            % syms delta
+            % eq = P * sin(Vangle - delta) == Q * cos(Vangle - delta) + Vabs * Iabs * sin(Iangle - delta);
+            % sol = solve(eq, delta);
+            % result = eval(sol);
+            % delta_st = norm(result(1));
+            delta_st = Vangle + atan(P/(Q+Vabs^2/L_g));
 
             Vd = real(V) * sin(delta_st) - imag(V) * cos(delta_st);
             Vq = real(V) * cos(delta_st) + imag(V) * sin(delta_st);

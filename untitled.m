@@ -1,6 +1,12 @@
 clearvars; clc; close all;
-load_vsm_params;
-gfmi = gfmi_vsm(vsc_params,controller_params,ref_model_params);
+load_vsm2axis_params;
+gfmi = gfmi_vsm_2axis(vsc_params,controller_params,ref_model_params);
+
+Te = 1;
+Ka = 0.5;
+avr_params = table(Te, Ka);
+avr_gfmi = avr_sadamoto2019(avr_params);
+gfmi.set_avr(avr_gfmi);
 
 net2 = network_IEEE9bus();
 net2.a_bus{2}.set_component(gfmi);
@@ -31,16 +37,12 @@ u = [0, 0.1, 0.1, 0.1;...
 
 %% Scenario 1: all machines are SM
 net1 = network_IEEE9bus();
-gen_model = 'generator_classical';
+gen_model = 'generator_2axis';
 
 % L_g = 2.6476e-04
-% Xd = 0.8958;
-% Xd_prime = 0.1198;
-% Xq = 0.8645;
-% Xq_prime = 0.1969;
-Xd = 2.6476e-04;
+Xd = 0.8958;
 Xd_prime = 0.1198;
-Xq = 2.6476e-04;
+Xq = 0.8645;
 Xq_prime = 0.1969;
 T = 6;
 Tdo = 6;
@@ -56,16 +58,6 @@ Ka = 0.5;
 avr_params = table(Te, Ka);
 avr = avr_sadamoto2019(avr_params);
 comp.set_avr(avr);
-
-% Kpss = 250;
-% Tpss = 10;
-% TL1p = 0.07;
-% TL1 = 0.02;
-% TL2p = 0.07;
-% TL2 = 0.02;
-% pss_params = table(Kpss, Tpss, TL1p, TL1, TL2p, TL2);
-% pss = pss(pss_params);
-% comp.set_pss(pss);
 
 net1.a_bus{2}.set_component(comp);
 net1.initialize()
@@ -97,6 +89,12 @@ for i = 1:numel(out1.V)
 end
 
 %% Scenario 2: SM in bus 2 is replaced by GFMI
+Te = 1;
+Ka = 0.5;
+avr_params = table(Te, Ka);
+avr_gfmi = avr_sadamoto2019(avr_params);
+gfmi.set_avr(avr_gfmi);
+
 net2 = network_IEEE9bus();
 net2.a_bus{2}.set_component(gfmi);
 net2.initialize();
@@ -111,7 +109,7 @@ out2 = net2.simulate(time, u, u_idx, 'method', 'zoh');
 sampling_time2 = out2.t;
 
 omega21 = out2.X{1}(:,2);
-omega22 = out2.X{2}(:,13) - 1;
+omega22 = out2.X{2}(:,12);
 omega23 = out2.X{3}(:,2);
 
 nbus2 = numel(out2.V);
